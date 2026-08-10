@@ -9,7 +9,7 @@ class ProdutoRepository {
 
     async buscarProdutoId(id) {
         const [rows] = await pool.query(
-            "SELECT * FROM produtos WHERE id = ?",
+            "SELECT * FROM produtos WHERE id_produto = ?",
             [id]
         );
         return rows[0];
@@ -39,7 +39,11 @@ class ProdutoRepository {
 
         valores.push(id);
 
-        const query = `UPDATE produtos SET ${camposProduto.join(", ")} WHERE id = ?`;
+        const query = `
+            UPDATE produtos 
+            SET ${camposProduto.join(", ")} 
+            WHERE id_produto = ?
+        `;
 
         const [result] = await pool.query(query, valores);
 
@@ -48,7 +52,7 @@ class ProdutoRepository {
 
     async deletarProduto(id) {
         const [result] = await pool.query(
-            "DELETE FROM produtos WHERE id = ?",
+            "DELETE FROM produtos WHERE id_produto = ?",
             [id]
         );
 
