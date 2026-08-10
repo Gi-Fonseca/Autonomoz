@@ -1,121 +1,68 @@
-const CategoriaRepository = require('../repositories/CategoriaRepository.js')
+const pool = require('../config/database.js')
 
-class CategoriaService{
-    async listarCategoria(){
-        const categoria = await CategoriaRepository.listarCategoria()
-        return{
-            sucesso: true,
-            dados: categorias,
-            total: categorias.lenght
-        }
+class CategoriaRepository {
+    async listarCategoria() {
+        const [rows] = await pool.query('SELECT * FROM categoria')
+        return rows
     }
 
-    async buscarCategoriaId(id){
-        if (!id || isNaN(id)){
-            throw{ 
-                status: 400,
-                mensagem: 'ID inválido'
-            }
-        }
-
-        const categoria = await CategoriaRepository.buscarCategoriaId(id)
-
-        if(!categoria){
-            throw{
-                status: 404,
-                mensagem: 'Categoria não encontrada'
-            }
-        }
-
-        return{
-            sucesso: true,
-            dados: categoria
-        }
+    async buscarCategoriaId(id) {
+        const [rows] = await pool.query('SELECT * FROM categoria WHERE id_categoria = ?', [id])
+        return rows[0]
     }
 
-    async publicarCategoria(dados){
-        const{id_produto, tipo_produto} = dados
+    // BLINDAGEM: Garantimos que o SQL só use o tipo_produto
+async publicarCategoria(dados) {
+    const { tipo_produto } = dados;
 
-        if(!id_produto || tipo_produto === undefined){
-            throw{
-                status: 400,
-                mensagem: 'ID_produto e Tipo_produto são obrigatórios'
-            }
-        }
+    if (!tipo_produto || tipo_produto.trim() === '') {
+        throw {
+            status: 400,
+            mensagem: 'O campo tipo_produto é obrigatório'
+        };
+    }
 
-        const novaCategoria = {
-            id_produto: id_produto(id),
+    const idCriado = await CategoriaRepository.publicarCategoria({
+        tipo_produto: tipo_produto.trim()
+    });
+
+    // Monte a resposta formatada aqui
+    return {
+        sucesso: true,
+        mensagem: 'Categoria cadastrada com sucesso',
+        dados: {
+            id_categoria: idCriado,
             tipo_produto: tipo_produto.trim()
         }
+    };
+}
+    async alterarDadosId(id, dadosCategoria) {
+        const camposCategoria = []
+        const valoresCategoria = []
 
-        const resultado = await CategoriaRepository.publicarCategoria(novaCategoria)
-
-        return{
-            sucesso: true,
-            mensagem: 'Categoria cadastrada com sucesso',
-            resultado
+        for (const [key, value] of Object.entries(dadosCategoria)) {
+            // Ignora id_produto se ele estiver vagando pelo objeto
+            if (key !== 'id_produto') {
+                camposCategoria.push(`${key} = ?`)
+                valoresCategoria.push(value)
+            }
         }
+
+        if (camposCategoria.length === 0) return null
+
+        valoresCategoria.push(id)
+
+        const query = `UPDATE categoria SET ${camposCategoria.join(', ')} WHERE id_categoria = ?`
+
+        const [resultado] = await pool.query(query, valoresCategoria)
+
+        return resultado.affectedRows
     }
 
-    async alterarDadosId(id, dados){
-        if(!id || isNaN(id)){
-            throw{
-                status: 400,
-                mensagem: 'Id Inválido'
-            }
-        }
-
-        const categoriaId = await CategoriaRepository.buscarCategoriaId(id)
-
-        if(!categoriaId){
-            throw{
-                status: 404,
-                mensagem: 'Categoria não encontrada'
-            }
-        }
-
-        const categoriaAtualizada = {}
-
-        const {id_produto, tipo_produto} = dados
-
-        if(id_produto !== undefined && (id) !== '')
-            categoriaAtualizada.id_produto = (id)
-
-        if(tipo_produto !== undefined) categoriaAtualizada.tipo_produto = tipo_produto.trim()
-    }
-    categoriaAtualizada = tipo_produto
-
-    await CategoriaRepository.alterarDadosId(id, categoriaAtualizada)
-
-    return{
-        sucesso: true,
-        mensagem: 'Categoria Atualizada'
-    }
-
-    async deletarCategoria(id){
-        if(!id || isNaN(id)){
-            throw{
-                status: 400,
-                mensagem: "Id inválido"
-            }
-        }
-
-        const idCategoria = await CategoriaRepository.buscarCategoriaId(id)
-
-        if(!idCategoria){
-            throw{
-                status: 404,
-                mensagem: 'Produto não encontrado'
-            }
-        }
-
-        await CategoriaRepository.deletarCategoria(id)
-
-        return{
-            sucesso: true,
-            mensagem: 'Categoria apagada'
-        }
+    async deletarCategoria(id) {
+        await pool.query('DELETE FROM categoria WHERE id_categoria = ?', [id])
+        return true
     }
 }
 
-module.exports = new CategoriaService()
+module.exports = new CategoriaRepository()

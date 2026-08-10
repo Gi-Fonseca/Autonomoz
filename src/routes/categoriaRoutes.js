@@ -7,3 +7,5 @@ router.get('/:id', CategoriaController.buscarCategoriaId)
 router.post('/', CategoriaController.publicarCategoria)
 router.put('/:id', CategoriaController.alterarDadosId)
 router.delete('/:id', CategoriaController.deletarCategoria)
+
+module.exports = router;
