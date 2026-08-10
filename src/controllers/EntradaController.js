@@ -4,62 +4,33 @@ const path = require("path");
 const fs = require("fs");
 
 class EntradaController {
-    // Listar todas as entradas
-    async listar(req, res) {
-        try {
-            const resultado = await EntradaService.listar();
-            res.json(resultado);
-        } catch (erro) {
-            res.status(erro.status || 500).json({
-                sucesso: false,
-                mensagem: erro.mensagem || "Erro interno do servidor",
-                erro: erro.stack || erro
-            });
-        }
-    }
-
-    // Buscar entrada por ID
-    async buscarPorId(req, res) {
-        try {
-            const resultado = await EntradaService.buscarPorId(req.params.id);
-            res.json(resultado);
-        } catch (erro) {
-            res.status(erro.status || 500).json({
-                sucesso: false,
-                mensagem: erro.mensagem || "Erro interno do servidor"
-            });
-        }
-    }
-
-    // Cadastrar entrada de produto (COM FOTO/COMPROVANTE BASE64)
     async cadastrar(req, res) {
         try {
             const dadosEntrada = req.body || {};
 
+            // Validar se o corpo da requisição veio vazio
             if (!req.body || Object.keys(req.body).length === 0) {
                 return res.status(400).json({
                     sucesso: false,
-                    mensagem: "Requisição sem corpo. Verifique Content-Type e o payload JSON."
+                    mensagem: "Requisição sem corpo. Verifique o Content-Type e o payload JSON."
                 });
             }
 
-            // Upload da foto do produto / nota fiscal em Base64
+            // Tratamento da imagem Base64 (salva no servidor e envia apenas o nome do arquivo)
             if (!dadosEntrada.foto && dadosEntrada.fotoBase64) {
                 const uploadDir = path.join(__dirname, "..", "..", "uploads");
 
                 if (!fs.existsSync(uploadDir)) {
-                    fs.mkdirSync(uploadDir, {
-                        recursive: true
-                    });
+                    fs.mkdirSync(uploadDir, { recursive: true });
                 }
 
-                let nomeArquivo;
-
                 try {
-                    nomeArquivo = salvarFotoBase64(
+                    const nomeArquivo = salvarFotoBase64(
                         dadosEntrada.fotoBase64,
                         uploadDir
                     );
+                    dadosEntrada.foto = nomeArquivo;
+                    delete dadosEntrada.fotoBase64;
                 } catch (e) {
                     return res.status(400).json({
                         sucesso: false,
@@ -67,17 +38,18 @@ class EntradaController {
                         erro: e.message || e
                     });
                 }
-
-                dadosEntrada.foto = nomeArquivo;
-                delete dadosEntrada.fotoBase64;
             }
 
             const resultado = await EntradaService.cadastrar(dadosEntrada);
 
-            res.status(201).json(resultado);
+            return res.status(201).json({
+                sucesso: true,
+                mensagem: "Entrada registrada com sucesso!",
+                dados: resultado
+            });
 
         } catch (erro) {
-            res.status(erro.status || 500).json({
+            return res.status(erro.status || 500).json({
                 sucesso: false,
                 mensagem: erro.mensagem || "Erro ao registrar entrada de produto",
                 erro: erro.stack || erro

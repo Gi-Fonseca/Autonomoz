@@ -1,79 +1,64 @@
 const db = require("../config/database");
 
 class EntradaRepository {
-    async listar() {
-        const [linhas] = await db.execute(`
-            SELECT e.*, p.nome AS produto_nome, f.nome AS funcionario_nome 
-            FROM entrada_produto e
-            LEFT JOIN produtos p ON e.id_produto = p.id_produto
-            LEFT JOIN funcionario f ON e.id_funcionario = f.id
-            ORDER BY e.data_entrada DESC
-        `);
-        return linhas;
-    }
-
-    async buscarPorId(id) {
-        const [linhas] = await db.execute(`
-            SELECT e.*, p.nome AS produto_nome, f.nome AS funcionario_nome 
-            FROM entrada_produto e
-            LEFT JOIN produtos p ON e.id_produto = p.id_produto
-            LEFT JOIN funcionario f ON e.id_funcionario = f.id
-            WHERE e.id_entrada = ?
-        `, [id]);
-        return linhas[0] || null;
-    }
-
     async cadastrar(dados) {
         const { id_produto, id_funcionario, quantidade, valor_compra, nf, foto, id_estoque } = dados;
-
         const connection = await db.getConnection();
 
         try {
-            // Inicia Transação
+            // Inicia a Transação
             await connection.beginTransaction();
 
-            // 1. Salva a entrada do produto
+            // 1. Grava no banco a entrada de produto
             const queryEntrada = `
-                INSERT INTO entrada_produto (id_produto, id_funcionario, quantidade, valor_compra, nf, foto)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO entrada_produto (id_produto, id_funcionario, quantidade, valor_compra, nf)
+                VALUES (?, ?, ?, ?, ?)
             `;
             const [resEntrada] = await connection.execute(queryEntrada, [
                 id_produto,
                 id_funcionario,
                 quantidade,
                 valor_compra,
-                nf || null,
-                foto || null
+                nf || null
             ]);
 
             const id_entrada = resEntrada.insertId;
 
-            // 2. Incrementa a quantidade na tabela produtos
+            // 2. Soma a quantidade que entrou na tabela 'produtos'
             const queryUpdateProduto = `
                 UPDATE produtos 
-                SET quantidade = quantidade + ? 
+                SET quantidade = quantidade + ?
+                ${foto ? ', foto = ?' : ''} 
                 WHERE id_produto = ?
             `;
-            await connection.execute(queryUpdateProduto, [quantidade, id_produto]);
 
-            // 3. Registra na tabela movimentacao
+            const paramsUpdate = foto 
+                ? [quantidade, foto, id_produto] 
+                : [quantidade, id_produto];
+
+            await connection.execute(queryUpdateProduto, paramsUpdate);
+
+            // 3. Insere o registro na tabela movimentacao
             const queryMovimentacao = `
                 INSERT INTO movimentacao (id_entrada, id_estoque)
                 VALUES (?, ?)
             `;
             await connection.execute(queryMovimentacao, [id_entrada, id_estoque || null]);
 
-            // Confirma tudo no banco
+            // Confirma todas as queries
             await connection.commit();
 
             return {
-                sucesso: true,
-                mensagem: "Entrada cadastrada e quantidade do produto atualizada!",
-                id_entrada
+                id_entrada,
+                id_produto,
+                id_funcionario,
+                quantidade_adicionada: quantidade,
+                valor_compra,
+                nf: nf || null
             };
 
         } catch (error) {
-            // Desfaz tudo se falhar
+            // Se algo der errado, desfaz as alterações no banco
             await connection.rollback();
             throw error;
         } finally {
