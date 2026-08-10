@@ -6,6 +6,13 @@ router.get("/", EntradaController.listar);
 router.get("/:id", EntradaController.buscarPorId);
 router.post("/", EntradaController.cadastrar);
 router.put("/:id", EntradaController.atualizar);
-router.delete("/:id", EntradaController.deletar);
+
+// Bloqueio do DELETE para preservar o histórico
+router.delete("/:id", (req, res) => {
+    return res.status(405).json({
+        sucesso: false,
+        mensagem: "Operação não permitida: Entradas constituem registros históricos de movimentação. Para correções, realize um lançamento de ajuste via POST."
+    });
+});
 
 module.exports = router;
