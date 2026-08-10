@@ -1,9 +1,9 @@
-const CategoriaService = require('../services/CategoriaService')
+const EstoqueService = require('../services/EstoqueService.js')
 
-class CategoriaController{
-    async listarCategoria(req,res){
+class EstoqueController{
+    async listarEstoque(req,res){
         try {
-            const resultado = await CategoriaService.listarCategoria()
+            const resultado = await EstoqueService.listarEstoque()
             res.json(resultado)
         } catch (erro) {
             res.status(erro.status || 500).json({
@@ -14,57 +14,57 @@ class CategoriaController{
         }
     }
 
-    async buscarCategoriaId(req,res){
+    async buscarEstoqueId(req,res){
         try {
-            const resultado = await CategoriaService.buscarCategoriaId(req.params.id)
+            const resultado = await EstoqueService.buscarEstoqueId(req.params.id)
             res.json(resultado)
         } catch (erro) {
             res.status(erro.status || 500).json({
                 sucesso: false,
                 mensagem: erro.mensagem || "Erro interno no servidor",
                 erro: erro.stack || erro
-            })
-        }
-    }
-    
-    async publicarCategoria(req,res){
-        try {
-            const resultado = await CategoriaService.publicarCategoria(req.body)
-            res.json(resultado)
-        } catch (erro) {
-            res.status(erro.status || 500).json({
-                sucesso: false,
-                mensagem: erro.mensagem || "Erro interno no servidor",
-                erro: erro.stack || erro
-            })
-        }
-    }
-    
-    async alterarDadosId(req,res){
-        try {
-            const resultado = await CategoriaService.alterarDadosId(req.params.id, req.body)
-            res.json(resultado)
-        } catch (erro) {
-            res.status(erro.status || 500).json({
-                sucesso: false,
-                mensagem: erro.mensagem || "Erro interno no servidor",
-                erro: erroo.stack || erro
             })
         }
     }
 
-    async deletarCategoria(req,res){
+    async publicarEstoque(req,res){
         try {
-            const resultado = await CategoriaService.deletarCategoria(req.params.id)
+            const resultado = await EstoqueService.publicarEstoque(req.body)
             res.json(resultado)
         } catch (erro) {
             res.status(erro.status || 500).json({
                 sucesso: false,
                 mensagem: erro.mensagem || "Erro interno no servidor",
-                erro: erro.stack | erro
+                erro: erro.stack || erro
+            })
+        }
+    }
+
+    async alterarDadosId(req,res){
+        try {
+            const resultado = await EstoqueService.alterarDadosId(req.params.id, req.body)
+            res.json(resultado)
+        } catch (erro) {
+            res.status(erro.status || 500).json({
+                sucesso: false,
+                mensagem: erro.mensagem || "Erro interno no servidor",
+                erro: erro.stack || erro
+            })
+        }
+    }
+
+    async deletarEstoque(req,res){
+        try {
+            const resultado = await EstoqueService.deletarEstoque(req.params.id)
+            res.json(resultado)
+        } catch (erro) {
+            res.status(erro.status || 500).json({
+                sucesso: false,
+                mensagem: erro.mensagem || "Erro interno no servidor",
+                erro: erro.stack || erro
             })
         }
     }
 }
 
-module.exports = new CategoriaController()
+module.exports = new EstoqueController()
