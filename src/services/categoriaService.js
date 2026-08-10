@@ -1,121 +1,123 @@
-const CategoriaRepository = require('../repositories/CategoriaRepository.js')
+const CategoriaRepository = require('../repositories/CategoriaRepository.js');
 
-class CategoriaService{
-    async listarCategoria(){
-        const categoria = await CategoriaRepository.listarCategoria()
-        return{
+class CategoriaService {
+
+    async listarCategoria() {
+        const categorias = await CategoriaRepository.listarCategoria();
+        return {
             sucesso: true,
             dados: categorias,
-            total: categorias.lenght
-        }
+            total: categorias.length
+        };
     }
 
-    async buscarCategoriaId(id){
-        if (!id || isNaN(id)){
-            throw{ 
+    async buscarCategoriaId(id) {
+        if (!id || isNaN(id)) {
+            throw { 
                 status: 400,
                 mensagem: 'ID inválido'
-            }
+            };
         }
 
-        const categoria = await CategoriaRepository.buscarCategoriaId(id)
+        const categoria = await CategoriaRepository.buscarCategoriaId(id);
 
-        if(!categoria){
-            throw{
+        if (!categoria) {
+            throw {
                 status: 404,
                 mensagem: 'Categoria não encontrada'
-            }
+            };
         }
 
-        return{
+        return {
             sucesso: true,
             dados: categoria
-        }
+        };
     }
 
-    async publicarCategoria(dados){
-        const{id_produto, tipo_produto} = dados
+    async publicarCategoria(dados) {
+        const { id_produto, tipo_produto } = dados;
 
-        if(!id_produto || tipo_produto === undefined){
-            throw{
+        if (!tipo_produto) {
+            throw {
                 status: 400,
-                mensagem: 'ID_produto e Tipo_produto são obrigatórios'
-            }
+                mensagem: 'O campo tipo_produto é obrigatório'
+            };
         }
 
         const novaCategoria = {
-            id_produto: id_produto(id),
+            id_produto: id_produto ? Number(id_produto) : null,
             tipo_produto: tipo_produto.trim()
-        }
+        };
 
-        const resultado = await CategoriaRepository.publicarCategoria(novaCategoria)
+        const resultado = await CategoriaRepository.publicarCategoria(novaCategoria);
 
-        return{
+        return {
             sucesso: true,
             mensagem: 'Categoria cadastrada com sucesso',
-            resultado
-        }
+            dados: resultado
+        };
     }
 
-    async alterarDadosId(id, dados){
-        if(!id || isNaN(id)){
-            throw{
+    async alterarDadosId(id, dados) {
+        if (!id || isNaN(id)) {
+            throw {
                 status: 400,
-                mensagem: 'Id Inválido'
-            }
+                mensagem: 'ID inválido'
+            };
         }
 
-        const categoriaId = await CategoriaRepository.buscarCategoriaId(id)
+        const categoriaExistente = await CategoriaRepository.buscarCategoriaId(id);
 
-        if(!categoriaId){
-            throw{
+        if (!categoriaExistente) {
+            throw {
                 status: 404,
                 mensagem: 'Categoria não encontrada'
-            }
+            };
         }
 
-        const categoriaAtualizada = {}
+        const { id_produto, tipo_produto } = dados;
+        const categoriaAtualizada = {};
 
-        const {id_produto, tipo_produto} = dados
-
-        if(id_produto !== undefined && (id) !== '')
-            categoriaAtualizada.id_produto = (id)
-
-        if(tipo_produto !== undefined) categoriaAtualizada.tipo_produto = tipo_produto.trim()
-    }
-    categoriaAtualizada = tipo_produto
-
-    await CategoriaRepository.alterarDadosId(id, categoriaAtualizada)
-
-    return{
-        sucesso: true,
-        mensagem: 'Categoria Atualizada'
-    }
-
-    async deletarCategoria(id){
-        if(!id || isNaN(id)){
-            throw{
-                status: 400,
-                mensagem: "Id inválido"
-            }
+        if (id_produto !== undefined) {
+            categoriaAtualizada.id_produto = Number(id_produto);
         }
 
-        const idCategoria = await CategoriaRepository.buscarCategoriaId(id)
-
-        if(!idCategoria){
-            throw{
-                status: 404,
-                mensagem: 'Produto não encontrado'
-            }
+        if (tipo_produto !== undefined && tipo_produto.trim() !== '') {
+            categoriaAtualizada.tipo_produto = tipo_produto.trim();
         }
 
-        await CategoriaRepository.deletarCategoria(id)
+        await CategoriaRepository.alterarDadosId(id, categoriaAtualizada);
 
-        return{
+        return {
             sucesso: true,
-            mensagem: 'Categoria apagada'
+            mensagem: 'Categoria atualizada com sucesso'
+        };
+    }
+
+    async deletarCategoria(id) {
+        if (!id || isNaN(id)) {
+            throw {
+                status: 400,
+                mensagem: 'ID inválido'
+            };
         }
+
+        const categoriaExistente = await CategoriaRepository.buscarCategoriaId(id);
+
+        if (!categoriaExistente) {
+            throw {
+                status: 404,
+                mensagem: 'Categoria não encontrada'
+            };
+        }
+
+        await CategoriaRepository.deletarCategoria(id);
+
+        return {
+            sucesso: true,
+            mensagem: 'Categoria apagada com sucesso'
+        };
     }
 }
 
-module.exports = new CategoriaService()
+module.exports = new CategoriaService();
