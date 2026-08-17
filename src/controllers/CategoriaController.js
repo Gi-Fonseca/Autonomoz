@@ -1,7 +1,7 @@
 const CategoriaService = require('../services/CategoriaService')
 
-class CategoriaController{
-    async listarCategoria(req,res){
+class CategoriaController {
+    async listarCategoria(req, res) {
         try {
             const resultado = await CategoriaService.listarCategoria()
             res.json(resultado)
@@ -14,7 +14,7 @@ class CategoriaController{
         }
     }
 
-    async buscarCategoriaId(req,res){
+    async buscarCategoriaId(req, res) {
         try {
             const resultado = await CategoriaService.buscarCategoriaId(req.params.id)
             res.json(resultado)
@@ -26,8 +26,8 @@ class CategoriaController{
             })
         }
     }
-    
-    async publicarCategoria(req,res){
+
+    async publicarCategoria(req, res) {
         try {
             const resultado = await CategoriaService.publicarCategoria(req.body)
             res.json(resultado)
@@ -39,8 +39,8 @@ class CategoriaController{
             })
         }
     }
-    
-    async alterarDadosId(req,res){
+
+    async alterarDadosId(req, res) {
         try {
             const resultado = await CategoriaService.alterarDadosId(req.params.id, req.body)
             res.json(resultado)
@@ -48,12 +48,12 @@ class CategoriaController{
             res.status(erro.status || 500).json({
                 sucesso: false,
                 mensagem: erro.mensagem || "Erro interno no servidor",
-                erro: erroo.stack || erro
+                erro: erro.stack || erro
             })
         }
     }
 
-    async deletarCategoria(req,res){
+    async deletarCategoria(req, res) {
         try {
             const resultado = await CategoriaService.deletarCategoria(req.params.id)
             res.json(resultado)
@@ -61,7 +61,7 @@ class CategoriaController{
             res.status(erro.status || 500).json({
                 sucesso: false,
                 mensagem: erro.mensagem || "Erro interno no servidor",
-                erro: erro.stack | erro
+                erro: erro.stack || erro
             })
         }
     }
