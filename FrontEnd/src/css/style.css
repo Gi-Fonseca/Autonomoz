@@ -1,0 +1,58 @@
+/* css/style.css - Tema Autonomoz 100% Vermelho */
+:root {
+    --bs-primary: #C0001A !important;
+    --bs-primary-rgb: 192, 0, 26 !important;
+    --bs-danger: #C0001A !important;
+    --bs-danger-rgb: 192, 0, 26 !important;
+    --bs-link-color: #C0001A !important;
+    --bs-link-hover-color: #9E0015 !important;
+}
+
+body {
+    background-color: #f8f9fa;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #212529;
+}
+
+/* Forçar Nav-Pills e Botões Ativos para Vermelho */
+.nav-pills .nav-link.active, 
+.nav-pills .show > .nav-link {
+    background-color: #C0001A !important;
+    color: #ffffff !important;
+}
+
+.nav-link {
+    color: #495057 !important;
+    font-weight: 600;
+}
+
+.nav-link:hover {
+    color: #C0001A !important;
+    background-color: rgba(192, 0, 26, 0.08) !important;
+}
+
+/* Botões do Bootstrap em Vermelho */
+.btn-primary, .btn-danger {
+    background-color: #C0001A !important;
+    border-color: #C0001A !important;
+    color: #ffffff !important;
+}
+
+.btn-primary:hover, .btn-danger:hover {
+    background-color: #9E0015 !important;
+    border-color: #9E0015 !important;
+}
+
+.btn-outline-primary, .btn-outline-danger {
+    color: #C0001A !important;
+    border-color: #C0001A !important;
+}
+
+.btn-outline-primary:hover, .btn-outline-danger:hover {
+    background-color: #C0001A !important;
+    color: #ffffff !important;
+}
+
+.text-danger-custom, .text-primary {
+    color: #C0001A !important;
+}

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autonomoz - Inventário Global</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="src/css/style.css">
+</head>
+<body class="bg-light">
+
+<div class="d-flex min-vh-100">
+    <!-- SIDEBAR UNIFICADA -->
+    <aside class="bg-white border-end p-3 d-flex flex-column justify-content-between" style="width: 260px; min-width: 260px; flex-shrink: 0;">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-4 px-2">
+                <i class="bi bi-car-front-fill text-danger-custom fs-3"></i>
+                <div>
+                    <div class="fw-black text-danger-custom lh-1 fs-5" style="font-weight: 800;">AutoNoMoz</div>
+                    <div class="text-muted fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">GESTÃO DE FROTA</div>
+                </div>
+            </div>
+
+            <ul class="nav nav-pills flex-column gap-1">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link rounded-3 px-3 py-2"><i class="bi bi-grid-1x2 me-2"></i> Painel</a>
+                </li>
+                <li class="nav-item">
+                    <a href="inventario.html" class="nav-link active rounded-3 px-3 py-2"><i class="bi bi-box-seam me-2"></i> Inventário</a>
+                </li>
+                <li class="nav-item">
+                    <a href="movimentacoes.html" class="nav-link rounded-3 px-3 py-2"><i class="bi bi-arrow-down-up me-2"></i> Movimentações</a>
+                </li>
+                <li class="nav-item">
+                    <a href="fornecedores.html" class="nav-link rounded-3 px-3 py-2"><i class="bi bi-truck me-2"></i> Fornecedores</a>
+                </li>
+                <li class="nav-item">
+                    <a href="produto-cadas.html" class="nav-link rounded-3 px-3 py-2"><i class="bi bi-plus-circle me-2"></i> Cadastrar Item</a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="border-top pt-3">
+            <a href="produto-cadas.html" class="btn btn-danger w-100 fw-bold py-2 rounded-3 mb-3 d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-plus-lg"></i> NOVO ESTOQUE
+            </a>
+            <button class="btn btn-link nav-link small text-danger p-0 px-2" onclick="fazerLogout()"><i class="bi bi-box-arrow-right me-2"></i> Sair do Sistema</button>
+        </div>
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="flex-grow-1 overflow-auto">
+        <header class="bg-white border-bottom p-3 d-flex justify-content-between align-items-center shadow-sm">
+            <div class="input-group" style="max-width: 400px;">
+                <span class="input-group-text bg-light border-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" id="busca-inventario" class="form-control bg-light border-0 shadow-none" placeholder="Pesquisar por SKU, peças, veículos..." onkeyup="filtrarInventario()">
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-outline-danger btn-sm fw-bold px-3" onclick="fazerLogout()">SAIR</button>
+            </div>
+        </header>
+
+        <div class="p-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+                <div>
+                    <h3 class="fw-bold m-0 text-dark">Inventário Global</h3>
+                    <p class="text-muted small m-0">Gestão integrada em tempo real de itens de frota.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="movimentacoes.html" class="btn btn-outline-secondary fw-bold px-3 rounded-3"><i class="bi bi-arrow-down-up me-1"></i> Histórico</a>
+                    <a href="produto-cadas.html" class="btn btn-danger fw-bold px-4 rounded-3"><i class="bi bi-plus-lg me-1"></i> Cadastrar Item</a>
+                </div>
+            </div>
+
+            <!-- MÉTRICAS -->
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3 mb-4">
+                <div class="col">
+                    <div class="card border-0 shadow-sm p-3 rounded-3 bg-white">
+                        <span class="text-muted fw-bold small">TOTAL DE ITENS</span>
+                        <h3 class="fw-bold my-1" id="total-itens">1.284 <span class="badge bg-success-subtle text-success fs-6 fw-bold">+12%</span></h3>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card border-0 shadow-sm p-3 rounded-3 bg-white">
+                        <span class="text-muted fw-bold small">VALOR EM ESTOQUE</span>
+                        <h3 class="fw-bold my-1">R$ 4.250.000</h3>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card border-0 shadow-sm p-3 rounded-3 bg-white">
+                        <span class="text-danger fw-bold small">ESTOQUE CRÍTICO</span>
+                        <h3 class="fw-bold text-danger my-1">18 <small class="text-muted fs-6">SKUs</small></h3>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card border-0 shadow-sm p-3 rounded-3 bg-white">
+                        <span class="text-muted fw-bold small">GIRO DE INVENTÁRIO</span>
+                        <h3 class="fw-bold my-1">4.2x</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABELA COM DADOS GARANTIDOS -->
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light border-bottom">
+                            <tr class="small text-muted fw-bold">
+                                <th class="ps-3">SKU</th>
+                                <th>NOME DO PRODUTO</th>
+                                <th>CATEGORIA</th>
+                                <th>MARCA</th>
+                                <th>COMPATIBILIDADE</th>
+                                <th>PREÇO DE VENDA</th>
+                                <th>QTD</th>
+                                <th class="text-end pe-3">AÇÕES DE ESTOQUE</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-inventario">
+                            <!-- Preenchido via JS com fallback automatico -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- MODAL DE MOVIMENTAÇÃO RÁPIDA (Entrada / Saída / Ajuste) -->
+<div class="modal fade" id="modalMovimentacao" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="modalTitulo">Movimentação de Estoque</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="mov-produto-id">
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">PRODUTO</label>
+                    <input type="text" id="mov-produto-nome" class="form-control" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">TIPO DE OPERAÇÃO</label>
+                    <select id="mov-tipo" class="form-select fw-bold">
+                        <option value="ENTRADA">🟢 ENTRADA (+)</option>
+                        <option value="SAIDA">🔴 SAÍDA (-)</option>
+                        <option value="AJUSTE">⚙️ AJUSTE MANUAL</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">QUANTIDADE</label>
+                    <input type="number" id="mov-qtd" class="form-control" value="1" min="1" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">MOTIVO / OBSERVAÇÃO</label>
+                    <input type="text" id="mov-obs" class="form-control" placeholder="Ex: Compra NF 1042 / Manutenção Frota #12">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger fw-bold" onclick="confirmarMovimentacao()">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/inventario.js"></script>
+</body>
+</html>
