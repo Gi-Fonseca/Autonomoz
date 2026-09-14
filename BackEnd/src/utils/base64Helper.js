@@ -1,40 +1,40 @@
-// utils/base64Helper.js
-const fs = require('fs'); // Biblioteca para lidar com arquivos no computador
-const path = require('path'); // Biblioteca para organizar caminhos de pastas
+// src/utils/uploadBase64.js
+const fs = require('fs');
+const path = require('path');
 
-function salvarFotoBase64(base64, uploadDir) {
-    // 1. Verifica se o texto recebido é realmente uma foto em Base64
-    const matches = base64.match(
-        /^data:(image\/\w+);base64,(.+)$/
-    );
-    
-    if (!matches) {
-        throw new Error('Base64 inválido'); // Avisa se o texto estiver errado
+/**
+ * Decodifica uma string Base64 e salva como arquivo físico na pasta uploads/
+ * @param {string} base64String - Ex: "data:image/jpeg;base64,/9j/4AAQSk..."
+ * @returns {string|null} - Retorna o nome do arquivo gerado
+ */
+function salvarImagemBase64(base64String) {
+    if (!base64String) return null;
+
+    // Extrai a extensão (png, jpeg, webp) e o conteúdo em bytes
+    const matches = base64String.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+
+    if (!matches || matches.length !== 3) {
+        throw new Error('Formato de imagem Base64 inválido.');
     }
 
-    // 2. Descobre se a foto é JPG, PNG, etc.
-    const extensao = matches[1].split('/')[1];
-    const dados = matches[2]; // Pega apenas a parte da foto, sem o "texto de aviso"
+    const extensao = matches[1];
+    const bufferDados = Buffer.from(matches[2], 'base64');
 
-    // 3. Cria um nome único usando a data e hora atual para não repetir
-    const nomeArquivo = `${Date.now()}.${extensao}`;
+    // Gera um nome único (ex: img-1726317600000.png)
+    const nomeArquivo = `img-${Date.now()}.${extensao}`;
     
-    // 4. Define o caminho completo: Pasta de Uploads + Nome do Arquivo
-    const caminhoArquivo = path.join(
-        uploadDir,
-        nomeArquivo
-    );
+    // Caminho da pasta uploads na raiz do BackEnd
+    const caminhoPasta = path.join(__dirname, '../../uploads');
 
-    // 5. Salva a foto fisicamente na pasta, transformando o texto em imagem
-    fs.writeFileSync(
-        caminhoArquivo,
-        dados,
-        'base64'
-    );
+    // Garante que a pasta uploads existe
+    if (!fs.existsSync(caminhoPasta)) {
+        fs.mkdirSync(caminhoPasta, { recursive: true });
+    }
 
-    return nomeArquivo; // Devolve o nome da foto para salvarmos no banco de dados
+    // Grava o arquivo no disco
+    fs.writeFileSync(path.join(caminhoPasta, nomeArquivo), bufferDados);
+
+    return nomeArquivo;
 }
 
-module.exports = {
-    salvarFotoBase64
-};
+module.exports = { salvarImagemBase64 };
