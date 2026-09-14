@@ -1,161 +1,156 @@
-const ProdutoRepository = require("../repositories/ProdutoRepository");
+const ProdutoRepository = require("../repositories/ProdutoRepository")
 
 class ProdutoService {
-
+    // Lista produtos
     async listarProdutos() {
-        const produtos = await ProdutoRepository.listarProdutos();
+        const produtos = await ProdutoRepository.listarProdutos()
 
         return {
             sucesso: true,
             dados: produtos,
             total: produtos.length
-        };
+        }
     }
 
+    // Busca produto
     async buscarProdutoId(id) {
         if (!id || isNaN(id)) {
             throw {
                 status: 400,
                 mensagem: "ID inválido"
-            };
+            }
         }
 
-        const produto = await ProdutoRepository.buscarProdutoId(id);
+        const produto = await ProdutoRepository.buscarProdutoId(id)
 
         if (!produto) {
             throw {
                 status: 404,
                 mensagem: "Produto não encontrado"
-            };
+            }
         }
 
         return {
             sucesso: true,
             dados: produto
-        };
+        }
     }
 
+    // Valida produto
     async publicarProduto(dados) {
+        const {
+            nome,
+            quantidade,
+            validade,
+            id_categoria,
+            id_fornecedor,
+            status
+        } = dados
 
-        const { marca, nome, quantidade, id_categoria } = dados;
-
-        if (!marca || !nome || quantidade === undefined || !id_categoria) {
+        if (
+            !nome ||
+            quantidade === undefined ||
+            !id_categoria ||
+            !id_fornecedor ||
+            status === undefined
+        ) {
             throw {
                 status: 400,
-                mensagem: "Marca, nome, quantidade e categoria são obrigatórios"
-            };
+                mensagem: "Nome, quantidade, categoria, fornecedor e status são obrigatórios"
+            }
         }
 
         if (isNaN(quantidade) || quantidade < 0) {
             throw {
                 status: 400,
                 mensagem: "Quantidade deve ser um número maior ou igual a 0"
-            };
+            }
         }
 
         const novoProduto = {
-            marca: marca.trim(),
             nome: nome.trim(),
             quantidade,
-            id_categoria
-        };
+            validade: validade || null,
+            id_categoria,
+            id_fornecedor,
+            status
+        }
 
-        const id = await ProdutoRepository.publicarProduto(novoProduto);
+        const id = await ProdutoRepository.publicarProduto(novoProduto)
 
         return {
             sucesso: true,
             mensagem: "Produto cadastrado com sucesso",
             id
-        };
+        }
     }
 
+    // Atualiza produto
     async alterarDados(id, dados) {
-
         if (!id || isNaN(id)) {
             throw {
                 status: 400,
                 mensagem: "ID inválido"
-            };
+            }
         }
 
-        const produto = await ProdutoRepository.buscarProdutoId(id);
+        const produto = await ProdutoRepository.buscarProdutoId(id)
 
         if (!produto) {
             throw {
                 status: 404,
                 mensagem: "Produto não encontrado"
-            };
+            }
         }
 
-        const produtoAtualizado = {};
+        const dadosPermitidos = {}
 
-        const { marca, nome, quantidade, id_categoria } = dados;
+        const camposPermitidos = [
+            "nome",
+            "quantidade",
+            "validade",
+            "id_categoria",
+            "id_fornecedor",
+            "status"
+        ]
 
-        if (marca !== undefined) {
-            produtoAtualizado.marca = marca.trim();
+        // Filtra campos
+        for (const campo of camposPermitidos) {
+            if (dados[campo] !== undefined) {
+                dadosPermitidos[campo] = dados[campo]
+            }
         }
 
-        if (nome !== undefined) {
-            produtoAtualizado.nome = nome.trim();
-        }
-
-        if (quantidade !== undefined) {
-
-            if (isNaN(quantidade) || quantidade < 0) {
+        if (dadosPermitidos.quantidade !== undefined) {
+            if (
+                isNaN(dadosPermitidos.quantidade) ||
+                dadosPermitidos.quantidade < 0
+            ) {
                 throw {
                     status: 400,
                     mensagem: "Quantidade deve ser um número maior ou igual a 0"
-                };
+                }
             }
-
-            produtoAtualizado.quantidade = quantidade;
         }
 
-        if (id_categoria !== undefined) {
-            produtoAtualizado.id_categoria = id_categoria;
+        if (dadosPermitidos.nome !== undefined) {
+            dadosPermitidos.nome = dadosPermitidos.nome.trim()
         }
 
-        if (Object.keys(produtoAtualizado).length === 0) {
+        if (Object.keys(dadosPermitidos).length === 0) {
             throw {
                 status: 400,
                 mensagem: "Nenhum dado enviado para atualização"
-            };
+            }
         }
 
-        await ProdutoRepository.alterarDados(id, produtoAtualizado);
+        await ProdutoRepository.alterarDados(id, dadosPermitidos)
 
         return {
             sucesso: true,
             mensagem: "Produto atualizado com sucesso"
-        };
-    }
-
-    async deletarProduto(id) {
-
-        if (!id || isNaN(id)) {
-            throw {
-                status: 400,
-                mensagem: "ID inválido"
-            };
         }
-
-        const produto = await ProdutoRepository.buscarProdutoId(id);
-
-        if (!produto) {
-            throw {
-                status: 404,
-                mensagem: "Produto não encontrado"
-            };
-        }
-
-        await ProdutoRepository.deletarProduto(id);
-
-        return {
-            sucesso: true,
-            mensagem: "Produto removido com sucesso"
-        };
     }
-
 }
 
-module.exports = new ProdutoService();
+module.exports = new ProdutoService()

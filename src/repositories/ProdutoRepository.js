@@ -1,63 +1,97 @@
-const pool = require("../config/database");
+const pool = require("../config/database")
 
 class ProdutoRepository {
-
+    // Lista produtos
     async listarProdutos() {
-        const [rows] = await pool.query("SELECT * FROM produtos");
-        return rows;
+        const [rows] = await pool.query(
+            "SELECT * FROM produtos"
+        )
+
+        return rows
     }
 
+    // Busca produto
     async buscarProdutoId(id) {
         const [rows] = await pool.query(
             "SELECT * FROM produtos WHERE id_produto = ?",
             [id]
-        );
-        return rows[0];
+        )
+
+        return rows[0]
     }
 
+    // Cria produto
     async publicarProduto(dadosProduto) {
-        const [result] = await pool.query(
-            "INSERT INTO produtos SET ?",
-            [dadosProduto]
-        );
-        return result.insertId;
+        const {
+            nome,
+            quantidade,
+            validade,
+            id_categoria,
+            id_fornecedor,
+            status
+        } = dadosProduto
+
+        const [resultado] = await pool.query(
+            `INSERT INTO produtos
+            (
+                nome,
+                quantidade,
+                validade,
+                id_categoria,
+                id_fornecedor,
+                status
+            )
+            VALUES (?, ?, ?, ?, ?, ?)`,
+            [
+                nome,
+                quantidade,
+                validade,
+                id_categoria,
+                id_fornecedor,
+                status
+            ]
+        )
+
+        return resultado.insertId
     }
 
+    // Atualiza produto
     async alterarDados(id, dadosProduto) {
+        const camposPermitidos = [
+            "nome",
+            "quantidade",
+            "validade",
+            "id_categoria",
+            "id_fornecedor",
+            "status"
+        ]
 
-        const camposProduto = [];
-        const valores = [];
+        const campos = []
+        const valores = []
 
-        for (const [key, value] of Object.entries(dadosProduto)) {
-            camposProduto.push(`${key} = ?`);
-            valores.push(value);
+        // Filtra campos
+        for (const campo of camposPermitidos) {
+            if (dadosProduto[campo] !== undefined) {
+                campos.push(`${campo} = ?`)
+                valores.push(dadosProduto[campo])
+            }
         }
 
-        if (camposProduto.length === 0) {
-            return null;
+        if (campos.length === 0) {
+            return 0
         }
 
-        valores.push(id);
+        valores.push(id)
 
-        const query = `
-            UPDATE produtos 
-            SET ${camposProduto.join(", ")} 
-            WHERE id_produto = ?
-        `;
+        const [resultado] = await pool.query(
+            `UPDATE produtos
+             SET ${campos.join(", ")}
+             WHERE id_produto = ?`,
+            valores
+        )
 
-        const [result] = await pool.query(query, valores);
-
-        return result.affectedRows;
-    }
-
-    async deletarProduto(id) {
-        const [result] = await pool.query(
-            "DELETE FROM produtos WHERE id_produto = ?",
-            [id]
-        );
-
-        return result.affectedRows;
+        return resultado.affectedRows
     }
 }
 
-module.exports = new ProdutoRepository();
+module.exports = new ProdutoRepository()

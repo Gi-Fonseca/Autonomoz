@@ -1,5 +1,10 @@
-const estoqueRoutes = require("./estoqueRoutes");
-const loteRoutes = require("./loteRoutes");
+const express = require('express');
+const router = express.Router();
+const LoteController = require('../controllers/LoteController'); 
 
-router.use("/estoque", estoqueRoutes);
-router.use("/lote", loteRoutes);
+
+router.get('/', LoteController.listar);
+router.post('/', LoteController.criar);
+router.get('/:id', LoteController.buscarPorId)
+
+module.exports = router;

@@ -13,6 +13,8 @@ const estoqueRoutes = require("./estoqueRoutes");
 const clienteRoutes = require("./clienteRoutes");
 const fornecedorRoutes = require("./fornecedorRoutes");
 const ajusteRoutes = require("./ajusteRoutes");
+const loteRoutes = require("./loteRoutes");
+
 
 router.use("/funcionario", funcionarioRoutes);
 router.use("/produto", produtoRoutes);
@@ -24,5 +26,7 @@ router.use("/estoque", estoqueRoutes);
 router.use("/cliente", clienteRoutes);
 router.use("/fornecedor", fornecedorRoutes);
 router.use("/ajuste", ajusteRoutes);
+router.use("/lote", loteRoutes);
+
 
 module.exports = router;
