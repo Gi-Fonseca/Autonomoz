@@ -1,169 +1,201 @@
 const db = require("../config/database");
 
 class SaidaRepository {
-    async listar() {
-        const query = `
+  async listar() {
+    const query = `
             SELECT s.*, p.nome AS produto_nome, f.nome AS funcionario_nome 
             FROM saida_produto s
             LEFT JOIN produtos p ON s.id_produto = p.id_produto
             LEFT JOIN funcionario f ON s.id_funcionario = f.id
             ORDER BY s.id_saida DESC
         `;
-        const [rows] = await db.execute(query);
-        return rows;
-    }
+    const [rows] = await db.execute(query);
+    return rows;
+  }
 
-    async buscarPorId(id) {
-        const query = `
+  async buscarPorId(id) {
+    const query = `
             SELECT s.*, p.nome AS produto_nome, f.nome AS funcionario_nome 
             FROM saida_produto s
             LEFT JOIN produtos p ON s.id_produto = p.id_produto
             LEFT JOIN funcionario f ON s.id_funcionario = f.id
             WHERE s.id_saida = ?
         `;
-        const [rows] = await db.execute(query, [id]);
+    const [rows] = await db.execute(query, [id]);
 
-        if (rows.length === 0) {
-            const erro = new Error("Registro de saída não encontrado.");
-            erro.status = 404;
-            throw erro;
-        }
-
-        return rows[0];
+    if (rows.length === 0) {
+      const erro = new Error("Registro de saída não encontrado.");
+      erro.status = 404;
+      throw erro;
     }
 
-    async cadastrar(dados) {
-        const { id_produto, id_funcionario, quantidade, motivo_saida, valor_venda, nf } = dados;
-        const connection = await db.getConnection();
+    return rows[0];
+  }
 
-        try {
-            await connection.beginTransaction();
+  async cadastrar(dados) {
+    const {
+      id_produto,
+      id_funcionario,
+      quantidade,
+      motivo_saida,
+      valor_venda,
+      nf,
+    } = dados;
+    const connection = await db.getConnection();
 
-            // 1. Cadastra a saída na tabela
-            const querySaida = `
+    try {
+      await connection.beginTransaction();
+
+      // 1. Cadastra a saída na tabela
+      const querySaida = `
                 INSERT INTO saida_produto (id_produto, id_funcionario, quantidade, motivo_saida, valor_venda, nf)
                 VALUES (?, ?, ?, ?, ?, ?)
             `;
-            const [resSaida] = await connection.execute(querySaida, [
-                id_produto,
-                id_funcionario,
-                quantidade,
-                motivo_saida,
-                valor_venda || null,
-                nf || null
-            ]);
+      const [resSaida] = await connection.execute(querySaida, [
+        id_produto,
+        id_funcionario,
+        quantidade,
+        motivo_saida,
+        valor_venda || null,
+        nf || null,
+      ]);
 
-            // 2. Subtrai a quantidade do estoque do produto
-            const queryEstoque = `
+      // 2. Subtrai a quantidade do estoque do produto
+      const queryEstoque = `
                 UPDATE produtos 
                 SET quantidade = quantidade - ? 
                 WHERE id_produto = ?
             `;
-            await connection.execute(queryEstoque, [quantidade, id_produto]);
+      await connection.execute(queryEstoque, [quantidade, id_produto]);
 
-            await connection.commit();
+      await connection.execute(
+        "INSERT INTO movimentacao(id_saida) VALUES (?)",
+        [resSaida.insertId],
+      );
 
-            return { id_saida: resSaida.insertId, ...dados };
+      await connection.commit();
 
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        } finally {
-            connection.release();
-        }
+      return { id_saida: resSaida.insertId, ...dados };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
     }
+  }
 
-    async atualizar(id_saida, dados) {
-        const { id_produto, id_funcionario, quantidade, motivo_saida, valor_venda, nf } = dados;
-        const connection = await db.getConnection();
+  async atualizar(id_saida, dados) {
+    const {
+      id_produto,
+      id_funcionario,
+      quantidade,
+      motivo_saida,
+      valor_venda,
+      nf,
+    } = dados;
+    const connection = await db.getConnection();
 
-        try {
-            await connection.beginTransaction();
+    try {
+      await connection.beginTransaction();
 
-            // Busca a quantidade antiga para ajustar o estoque com a diferença
-            const [saidas] = await connection.execute(
-                "SELECT id_produto, quantidade FROM saida_produto WHERE id_saida = ?",
-                [id_saida]
-            );
+      // Busca a quantidade antiga para ajustar o estoque com a diferença
+      const [saidas] = await connection.execute(
+        "SELECT id_produto, quantidade FROM saida_produto WHERE id_saida = ?",
+        [id_saida],
+      );
 
-            if (saidas.length === 0) {
-                const erro = new Error("Registro de saída não encontrado.");
-                erro.status = 404;
-                throw erro;
-            }
+      if (saidas.length === 0) {
+        const erro = new Error("Registro de saída não encontrado.");
+        erro.status = 404;
+        throw erro;
+      }
 
-            const quantidadeAntiga = saidas[0].quantidade;
-            const diferenca = quantidade - quantidadeAntiga;
+      const produtoOriginal = saidas[0].id_produto;
+      const quantidadeAntiga = saidas[0].quantidade;
+      const produtoMudou = Number(id_produto) !== Number(produtoOriginal);
 
-            // Atualiza o registro da saída
-            const queryUpdate = `
+      // Atualiza o registro da saída
+      const queryUpdate = `
                 UPDATE saida_produto 
                 SET id_produto = ?, id_funcionario = ?, quantidade = ?, motivo_saida = ?, valor_venda = ?, nf = ?
                 WHERE id_saida = ?
             `;
-            await connection.execute(queryUpdate, [
-                id_produto,
-                id_funcionario,
-                quantidade,
-                motivo_saida,
-                valor_venda || null,
-                nf || null,
-                id_saida
-            ]);
+      await connection.execute(queryUpdate, [
+        id_produto,
+        id_funcionario,
+        quantidade,
+        motivo_saida,
+        valor_venda || null,
+        nf || null,
+        id_saida,
+      ]);
 
-            // Atualiza o estoque no produto
-            const queryEstoque = `
-                UPDATE produtos 
-                SET quantidade = quantidade - ? 
-                WHERE id_produto = ?
-            `;
-            await connection.execute(queryEstoque, [diferenca, id_produto]);
-
-            await connection.commit();
-            return { id_saida: Number(id_saida), ...dados };
-
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        } finally {
-            connection.release();
+      if (produtoMudou) {
+        await connection.execute(
+          "UPDATE produtos SET quantidade = quantidade + ? WHERE id_produto = ?",
+          [quantidadeAntiga, produtoOriginal],
+        );
+        await connection.execute(
+          "UPDATE produtos SET quantidade = quantidade - ? WHERE id_produto = ?",
+          [quantidade, id_produto],
+        );
+      } else {
+        // Mesmo produto: aplica só a diferença
+        const diferenca = quantidade - quantidadeAntiga;
+        if (diferenca !== 0) {
+          await connection.execute(
+            "UPDATE produtos SET quantidade = quantidade - ? WHERE id_produto = ?",
+            [diferenca, id_produto],
+          );
         }
+      }
+
+      // Atualiza o estoque no produto
+      await connection.commit();
+      return { id_saida: Number(id_saida), ...dados };
+      
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
     }
+  }
 
-    async deletar(id_saida) {
-        const connection = await db.getConnection();
+  async deletar(id_saida) {
+    const connection = await db.getConnection();
 
-        try {
-            await connection.beginTransaction();
+    try {
+      await connection.beginTransaction();
 
-            // 1. Limpa vínculos da tabela de movimentacao caso existam
-            await connection.execute(
-                "DELETE FROM movimentacao WHERE id_saida = ?",
-                [id_saida]
-            );
+      // 1. Limpa vínculos da tabela de movimentacao caso existam
+      await connection.execute("DELETE FROM movimentacao WHERE id_saida = ?", [
+        id_saida,
+      ]);
 
-            // 2. Deleta o registro da saída
-            const [resultado] = await connection.execute(
-                "DELETE FROM saida_produto WHERE id_saida = ?",
-                [id_saida]
-            );
+      // 2. Deleta o registro da saída
+      const [resultado] = await connection.execute(
+        "DELETE FROM saida_produto WHERE id_saida = ?",
+        [id_saida],
+      );
 
-            if (resultado.affectedRows === 0) {
-                const erro = new Error("Registro de saída não encontrado para exclusão.");
-                erro.status = 404;
-                throw erro;
-            }
+      if (resultado.affectedRows === 0) {
+        const erro = new Error(
+          "Registro de saída não encontrado para exclusão.",
+        );
+        erro.status = 404;
+        throw erro;
+      }
 
-            await connection.commit();
-            return { id_saida: Number(id_saida) };
-
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        } finally {
-            connection.release();
-        }
+      await connection.commit();
+      return { id_saida: Number(id_saida) };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
     }
+  }
 }
 
 module.exports = new SaidaRepository();

@@ -43,6 +43,24 @@ class LoteRepository {
 
         return resultado.affectedRows
     }
+
+    async contarEstoquePorLote(id) {
+        const [rows] = await pool.query(
+            'SELECT COUNT(*) AS total FROM estoque WHERE id_lote = ?',
+            [id]
+        )
+
+        return rows[0].total
+    }
+
+    async excluir(id) {
+        const [resultado] = await pool.query(
+            'DELETE FROM lote WHERE id_lote = ?',
+            [id]
+        )
+
+        return resultado.affectedRows
+    }
 }
 
 module.exports = new LoteRepository()

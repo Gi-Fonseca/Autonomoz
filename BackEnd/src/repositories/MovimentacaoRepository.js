@@ -5,17 +5,18 @@ class MovimentacaoRepository {
         const query = `
             SELECT 
                 m.id_movimentacao,
-                m.id_estoque,
                 m.id_entrada,
                 m.id_saida,
+                m.id_ajuste,
                 e.quantidade AS entrada_quantidade,
                 e.nf AS entrada_nf,
                 s.quantidade AS saida_quantidade,
-                s.motivo_saida
+                s.motivo_saida,
+                a.motivo_ajuste
             FROM movimentacao m
             LEFT JOIN entrada_produto e ON m.id_entrada = e.id_entrada
             LEFT JOIN saida_produto s ON m.id_saida = s.id_saida
-            LEFT JOIN estoque est ON m.id_estoque = est.id_estoque
+            LEFT JOIN ajuste_produto a ON m.id_ajuste = a.id_ajuste
             ORDER BY m.id_movimentacao DESC
         `;
         const [rows] = await db.execute(query);
@@ -26,9 +27,9 @@ class MovimentacaoRepository {
         const query = `
             SELECT 
                 m.id_movimentacao,
-                m.id_estoque,
                 m.id_entrada,
-                m.id_saida
+                m.id_saida,
+                m.id_ajuste
             FROM movimentacao m
             WHERE m.id_movimentacao = ?
         `;
@@ -44,35 +45,35 @@ class MovimentacaoRepository {
     }
 
     async cadastrar(dados) {
-        const { id_saida, id_entrada, id_estoque } = dados;
+        const { id_saida, id_entrada, id_ajuste } = dados;
 
         const query = `
-            INSERT INTO movimentacao (id_saida, id_entrada, id_estoque)
+            INSERT INTO movimentacao (id_saida, id_entrada, id_ajuste)
             VALUES (?, ?, ?)
         `;
 
         const [resultado] = await db.execute(query, [
             id_saida || null,
             id_entrada || null,
-            id_estoque
+            id_ajuste || null
         ]);
 
         return { id_movimentacao: resultado.insertId, ...dados };
     }
 
     async atualizar(id_movimentacao, dados) {
-        const { id_saida, id_entrada, id_estoque } = dados;
+        const { id_saida, id_entrada, id_ajuste } = dados;
 
         const query = `
             UPDATE movimentacao
-            SET id_saida = ?, id_entrada = ?, id_estoque = ?
+            SET id_saida = ?, id_entrada = ?, id_ajuste = ?
             WHERE id_movimentacao = ?
         `;
 
         const [resultado] = await db.execute(query, [
             id_saida || null,
             id_entrada || null,
-            id_estoque,
+            id_ajuste || null,
             id_movimentacao
         ]);
 
