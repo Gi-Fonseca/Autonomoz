@@ -1,248 +1,140 @@
+const bcrypt = require("bcryptjs");
+const { gerarToken } = require("../middlewares/auth");
 const FuncionarioRepository = require("../repositories/FuncionarioRepository");
-
-class FuncionarioService {
-
-    async listar() {
-
-        const funcionarios = await FuncionarioRepository.findAll();
-
-        return {
-            sucesso: true,
-            dados: funcionarios,
-            total: funcionarios.length
-        };
-    }
-
-    async buscarPorId(id) {
-
-        if (!id || isNaN(id)) {
-            throw {
-                status: 400,
-                mensagem: "ID inválido"
-            };
-        }
-
-        const funcionario = await FuncionarioRepository.findById(id);
-
-        if (!funcionario) {
-            throw {
-                status: 404,
-                mensagem: "Funcionário não encontrado"
-            };
-        }
-
-        return {
-            sucesso: true,
-            dados: funcionario
-        };
-    }
-
-    async cadastrar(dados) {
-
-        const {
-            cargo,
-            nome,
-            cpf,
-            email,
-            senha
-        } = dados;
-
-        if (!cargo || !nome || !cpf || !email || !senha) {
-            throw {
-                status: 400,
-                mensagem: "Todos os campos são obrigatórios"
-            };
-        }
-
-        const cargosValidos = [
-            "Estoquista",
-            "Gerente",
-            "estoquista",
-            "gerente"
-        ];
-
-        if (!cargosValidos.includes(cargo)) {
-            throw {
-                status: 400,
-                mensagem: "Cargo deve ser 'Estoquista' ou 'Gerente'"
-            };
-        }
-
-        const cpfLimpo = cpf.replace(/\D/g, "");
-
-        if (cpfLimpo.length !== 11) {
-            throw {
-                status: 400,
-                mensagem: "CPF deve conter 11 dígitos numéricos"
-            };
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!emailRegex.test(email)) {
-            throw {
-                status: 400,
-                mensagem: "Formato de e-mail inválido"
-            };
-        }
-
-        if (senha.length < 8) {
-            throw {
-                status: 400,
-                mensagem: "A senha deve ter no mínimo 8 caracteres"
-            };
-        }
-
-        const emailExiste = await FuncionarioRepository.findByEmail(email);
-
-        if (emailExiste) {
-            throw {
-                status: 400,
-                mensagem: "Este e-mail já está cadastrado"
-            };
-        }
-
-        const cpfExiste = await FuncionarioRepository.findByCpf(cpfLimpo);
-
-        if (cpfExiste) {
-            throw {
-                status: 400,
-                mensagem: "Este CPF já está cadastrado"
-            };
-        }
-
-        const novoFuncionario = {
-            cargo,
-            nome: nome.trim(),
-            cpf: cpfLimpo,
-            email: email.toLowerCase(),
-            senha
-        };
-
-        const id = await FuncionarioRepository.create(novoFuncionario);
-
-        return {
-            sucesso: true,
-            mensagem: "Funcionário cadastrado com sucesso",
-            id
-        };
-    }
-
-    async atualizar(id, dados) {
-
-        if (!id || isNaN(id)) {
-            throw {
-                status: 400,
-                mensagem: "ID inválido"
-            };
-        }
-
-        const existe = await FuncionarioRepository.findById(id);
-
-        if (!existe) {
-            throw {
-                status: 404,
-                mensagem: "Funcionário não encontrado"
-            };
-        }
-
-        const atualizado = {};
-
-        const {
-            cargo,
-            nome,
-            cpf,
-            email,
-            senha
-        } = dados;
-
-        if (cargo !== undefined) {
-            atualizado.cargo = cargo;
-        }
-
-        if (nome !== undefined) {
-            atualizado.nome = nome.trim();
-        }
-
-        if (cpf !== undefined) {
-            atualizado.cpf = cpf.replace(/\D/g, "");
-        }
-
-        if (email !== undefined) {
-
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-            if (!emailRegex.test(email)) {
-                throw {
-                    status: 400,
-                    mensagem: "Formato de e-mail inválido"
-                };
-            }
-
-            const emailExiste = await FuncionarioRepository.findByEmail(email);
-
-            if (emailExiste && emailExiste.id !== parseInt(id)) {
-                throw {
-                    status: 400,
-                    mensagem: "Este e-mail já está em uso por outro funcionário"
-                };
-            }
-
-            atualizado.email = email.toLowerCase();
-        }
-
-        if (senha !== undefined) {
-
-            if (senha.length < 8) {
-                throw {
-                    status: 400,
-                    mensagem: "A senha deve ter no mínimo 8 caracteres"
-                };
-            }
-
-            atualizado.senha = senha;
-        }
-
-        if (Object.keys(atualizado).length === 0) {
-            throw {
-                status: 400,
-                mensagem: "Nenhum dado válido enviado para atualização"
-            };
-        }
-
-        await FuncionarioRepository.update(id, atualizado);
-
-        return {
-            sucesso: true,
-            mensagem: "Funcionário atualizado com sucesso"
-        };
-    }
-
-    async deletar(id) {
-
-        if (!id || isNaN(id)) {
-            throw {
-                status: 400,
-                mensagem: "ID inválido"
-            };
-        }
-
-        const existe = await FuncionarioRepository.findById(id);
-
-        if (!existe) {
-            throw {
-                status: 404,
-                mensagem: "Funcionário não encontrado"
-            };
-        }
-
-        await FuncionarioRepository.delete(id);
-
-        return {
-            sucesso: true,
-            mensagem: "Funcionário removido com sucesso"
-        };
-    }
+const cargos = ["Estoquista", "Gerente"];
+function idValido(id) {
+  if (!id || isNaN(id)) throw { status: 400, mensagem: "ID inválido" };
 }
-
+function publico(u) {
+  return { id: u.id, nome: u.nome, email: u.email, cargo: u.cargo };
+}
+class FuncionarioService {
+  async listar() {
+    const dados = await FuncionarioRepository.findAll();
+    return { sucesso: true, dados, total: dados.length };
+  }
+  async buscarPorId(id) {
+    idValido(id);
+    const u = await FuncionarioRepository.findById(id);
+    if (!u) throw { status: 404, mensagem: "Funcionário não encontrado" };
+    return { sucesso: true, dados: u };
+  }
+  async cadastrar(dados) {
+    if (
+      !dados ||
+      !dados.cargo ||
+      !dados.nome ||
+      !dados.cpf ||
+      !dados.email ||
+      !dados.senha
+    )
+      throw { status: 400, mensagem: "Todos os campos são obrigatórios" };
+    const cargo = cargos.find(
+      (c) => c.toLowerCase() === String(dados.cargo).toLowerCase(),
+    );
+    if (!cargo)
+      throw {
+        status: 400,
+        mensagem: "Cargo deve ser 'Estoquista' ou 'Gerente'",
+      };
+    const cpf = String(dados.cpf).replace(/\D/g, "");
+    if (cpf.length !== 11)
+      throw { status: 400, mensagem: "CPF deve conter 11 dígitos numéricos" };
+    const email = String(dados.email).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      throw { status: 400, mensagem: "Formato de e-mail inválido" };
+    if (String(dados.senha).length < 8)
+      throw {
+        status: 400,
+        mensagem: "A senha deve ter no mínimo 8 caracteres",
+      };
+    if (await FuncionarioRepository.findByEmail(email))
+      throw { status: 400, mensagem: "Este e-mail já está cadastrado" };
+    if (await FuncionarioRepository.findByCpf(cpf))
+      throw { status: 400, mensagem: "Este CPF já está cadastrado" };
+    const id = await FuncionarioRepository.create({
+      cargo,
+      nome: String(dados.nome).trim(),
+      cpf,
+      email,
+      senha: await bcrypt.hash(String(dados.senha), 12),
+    });
+    return {
+      sucesso: true,
+      mensagem: "Funcionário cadastrado com sucesso",
+      dados: { id, nome: String(dados.nome).trim(), email, cargo },
+    };
+  }
+  async atualizar(id, dados) {
+    idValido(id);
+    const atual = await FuncionarioRepository.findById(id);
+    if (!atual) throw { status: 404, mensagem: "Funcionário não encontrado" };
+    const body = dados || {};
+    const n = {};
+    if (body.cargo !== undefined) {
+      const cargo = cargos.find(
+        (c) => c.toLowerCase() === String(body.cargo).toLowerCase(),
+      );
+      if (!cargo) throw { status: 400, mensagem: "Cargo inválido" };
+      n.cargo = cargo;
+    }
+    if (body.nome !== undefined) n.nome = String(body.nome).trim();
+    if (body.cpf !== undefined) {
+      n.cpf = String(body.cpf).replace(/\D/g, "");
+      if (n.cpf.length !== 11)
+        throw { status: 400, mensagem: "CPF deve conter 11 dígitos numéricos" };
+    }
+    if (body.email !== undefined) {
+      n.email = String(body.email).trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(n.email))
+        throw { status: 400, mensagem: "Formato de e-mail inválido" };
+    }
+    if (body.senha !== undefined) {
+      if (String(body.senha).length < 8)
+        throw {
+          status: 400,
+          mensagem: "A senha deve ter no mínimo 8 caracteres",
+        };
+      n.senha = await bcrypt.hash(String(body.senha), 12);
+    }
+    if (!Object.keys(n).length)
+      throw {
+        status: 400,
+        mensagem: "Nenhum dado válido enviado para atualização",
+      };
+    const r = await FuncionarioRepository.update(id, n);
+    if (!r) throw { status: 409, mensagem: "Nenhum dado foi alterado" };
+    return {
+      sucesso: true,
+      mensagem: "Funcionário atualizado com sucesso",
+      dados: { id: Number(id), ...n, senha: undefined },
+    };
+  }
+  async deletar(id) {
+    idValido(id);
+    if (!(await FuncionarioRepository.findById(id)))
+      throw { status: 404, mensagem: "Funcionário não encontrado" };
+    await FuncionarioRepository.delete(id);
+    return {
+      sucesso: true,
+      mensagem: "Funcionário removido com sucesso",
+      dados: { id: Number(id) },
+    };
+  }
+  async login(email, senha) {
+    const u = await FuncionarioRepository.findByEmail(
+      String(email || "")
+        .trim()
+        .toLowerCase(),
+    );
+    if (!u || !(await bcrypt.compare(String(senha || ""), u.senha)))
+      throw { status: 401, mensagem: "E-mail ou senha inválidos" };
+    const usuario = publico(u);
+    return {
+      sucesso: true,
+      mensagem: "Login realizado com sucesso",
+      dados: { token: gerarToken(usuario), usuario },
+    };
+  }
+}
 module.exports = new FuncionarioService();

@@ -1,38 +1,30 @@
-const pool = require("../config/database")
+const pool = require("../config/database");
 
 class ProdutoRepository {
-    // Lista produtos
-    async listarProdutos() {
-        const [rows] = await pool.query(
-            "SELECT * FROM produtos"
-        )
+  // Lista produtos
+  async listarProdutos() {
+    const [rows] = await pool.query("SELECT * FROM produtos");
 
-        return rows
-    }
+    return rows;
+  }
 
-    // Busca produto
-    async buscarProdutoId(id) {
-        const [rows] = await pool.query(
-            "SELECT * FROM produtos WHERE id_produto = ?",
-            [id]
-        )
+  // Busca produto
+  async buscarProdutoId(id) {
+    const [rows] = await pool.query(
+      "SELECT * FROM produtos WHERE id_produto = ?",
+      [id],
+    );
 
-        return rows[0]
-    }
+    return rows[0];
+  }
 
-    // Cria produto
-    async publicarProduto(dadosProduto) {
-        const {
-            nome,
-            quantidade,
-            validade,
-            id_categoria,
-            id_fornecedor,
-            status
-        } = dadosProduto
+  // Cria produto
+  async publicarProduto(dadosProduto) {
+    const { nome, quantidade, validade, id_categoria, id_fornecedor, status } =
+      dadosProduto;
 
-        const [resultado] = await pool.query(
-            `INSERT INTO produtos
+    const [resultado] = await pool.query(
+      `INSERT INTO produtos
             (
                 nome,
                 quantidade,
@@ -42,56 +34,49 @@ class ProdutoRepository {
                 status
             )
             VALUES (?, ?, ?, ?, ?, ?)`,
-            [
-                nome,
-                quantidade,
-                validade,
-                id_categoria,
-                id_fornecedor,
-                status
-            ]
-        )
+      [nome, quantidade, validade, id_categoria, id_fornecedor, status],
+    );
 
-        return resultado.insertId
+    return resultado.insertId;
+  }
+
+  // Atualiza produto
+  async alterarDados(id, dadosProduto) {
+    const camposPermitidos = [
+      "nome",
+      "quantidade",
+      "validade",
+      "id_categoria",
+      "id_fornecedor",
+      "status",
+    ];
+
+    const campos = [];
+    const valores = [];
+
+    // Filtra campos
+    for (const campo of camposPermitidos) {
+      if (dadosProduto[campo] !== undefined) {
+        campos.push(`${campo} = ?`);
+        valores.push(dadosProduto[campo]);
+      }
     }
 
-    // Atualiza produto
-    async alterarDados(id, dadosProduto) {
-        const camposPermitidos = [
-            "nome",
-            "quantidade",
-            "validade",
-            "id_categoria",
-            "id_fornecedor",
-            "status"
-        ]
+    if (campos.length === 0) {
+      return 0;
+    }
 
-        const campos = []
-        const valores = []
+    valores.push(id);
 
-        // Filtra campos
-        for (const campo of camposPermitidos) {
-            if (dadosProduto[campo] !== undefined) {
-                campos.push(`${campo} = ?`)
-                valores.push(dadosProduto[campo])
-            }
-        }
-
-        if (campos.length === 0) {
-            return 0
-        }
-
-        valores.push(id)
-
-        const [resultado] = await pool.query(
-            `UPDATE produtos
+    const [resultado] = await pool.query(
+      `UPDATE produtos
              SET ${campos.join(", ")}
              WHERE id_produto = ?`,
-            valores
-        )
+      valores,
+    );
 
-        return resultado.affectedRows
-    }
+    return resultado.affectedRows;
+  }
 }
 
-module.exports = new ProdutoRepository()
+module.exports = new ProdutoRepository();

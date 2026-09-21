@@ -1,49 +1,49 @@
-const pool = require('../config/database.js')
-
+const pool = require("../config/database");
 class ClienteRepository {
-    // Lista clientes
-    async listar() {
-        const [clientes] = await pool.query('SELECT * FROM cliente')
-        return clientes
-    }
+  async listar() {
+    const [rows] = await pool.query(
+      "SELECT id_cliente, nome, email, cadastro FROM cliente",
+    );
+    return rows;
+  }
 
-    // Busca cliente
-    async buscarPorId(id) {
-        const [clientes] = await pool.query(
-            'SELECT * FROM cliente WHERE id_cliente = ?',
-            [id]
-        )
-        return clientes[0]
-    }
-
-    // Cria cliente
-    async criar(dados) {
-        const { nome, email, cadastro } = dados
-        const [resultado] = await pool.query(
-            'INSERT INTO cliente (nome, email, cadastro) VALUES (?, ?, ?)',
-            [nome, email, cadastro || null]
-        )
-        return resultado.insertId
-    }
-
-    // Atualiza cliente
-    async atualizar(id, dados) {
-        const { nome, email, cadastro } = dados
-        const [resultado] = await pool.query(
-            'UPDATE cliente SET nome = ?, email = ?, cadastro = ? WHERE id_cliente = ?',
-            [nome, email, cadastro || null, id]
-        )
-        return resultado.affectedRows
-    }
-
-    // Exclui cliente
-    async excluir(id) {
-        const [resultado] = await pool.query(
-            'DELETE FROM cliente WHERE id_cliente = ?',
-            [id]
-        )
-        return resultado.affectedRows
-    }
+  async buscarPorId(id) {
+    const [rows] = await pool.query(
+      "SELECT id_cliente, nome, email, cadastro FROM cliente WHERE id_cliente = ?",
+      [id],
+    );
+    return rows[0];
+  }
+  async criar(dados) {
+    const [result] = await pool.query(
+      "INSERT INTO cliente (nome, email, cadastro) VALUES (?, ?, ?)",
+      [dados.nome, dados.email, dados.cadastro || null],
+    );
+    return result.insertId;
+  }
+  async atualizar(id, dados) {
+    const permitidos = ["nome", "email", "cadastro"];
+    const campos = [];
+    const valores = [];
+    for (const campo of permitidos)
+      if (dados[campo] !== undefined) {
+        campos.push(campo + " = ?");
+        valores.push(dados[campo]);
+      }
+    if (!campos.length) return 0;
+    valores.push(id);
+    const [result] = await pool.query(
+      "UPDATE cliente SET " + campos.join(", ") + " WHERE id_cliente = ?",
+      valores,
+    );
+    return result.affectedRows;
+  }
+  async excluir(id) {
+    const [result] = await pool.query(
+      "DELETE FROM cliente WHERE id_cliente = ?",
+      [id],
+    );
+    return result.affectedRows;
+  }
 }
-
-module.exports = new ClienteRepository()
+module.exports = new ClienteRepository();
