@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="src/css/login-cadastro.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.0/css/all.min.css">
+
+    <title>Autonomoz | Cadastro</title>
+</head>
+<body>
+    <div class="form-div">
+        <div class="form-header">
+            <h2>Autonomoz</h2>
+            <p clas="subtitulo">Sistema Avançado de Gestão</p>
+        </div>
+
+        <div class="form-body">
+            <div class="form-btns">
+                <p>Insira suas credenciais para acessar o sistema</p>
+                <div class="form-btns__grid">
+                    <button class="form-btns__btn">
+                        <i class="fa-solid fa-user-gear"></i>
+                        <p>Gerente</p>
+                    </button>
+                    <button class="form-btns__btn">
+                        <i class="fa-solid fa-box-archive"></i>
+                        <p>Estoquista</p>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-forms__group">
+                <label for="nome" class="form-forms__label">Nome</label>
+                <div class="form-forms__input-wrapper">
+                    <i class="fa-solid fa-user form-forms__icon"></i>
+                    <input
+                     type="text"
+                     id="nome"
+                     class="form-forms__input"
+                     placeholder="Nome Completo"
+                    >
+                </div>
+            </div>
+
+            <div class="form-forms__group">
+                <label for="cpf" class="form-forms__label">CPF</label>
+                <div class="form-forms__input-wrapper">
+                    <i class="fa-solid fa-address-card form-forms__icon"></i>
+                    <input
+                     type="text"
+                     id="cpf"
+                     class="form-forms__input"
+                     placeholder="000.000.000-00"
+                     maxlength="14"
+                    >
+                </div>
+            </div>
+
+            <div class="form-forms__group">
+                <label for="email" class="form-forms__label">Email</label>
+                <div class="form-forms__input-wrapper">
+                    <i class="fa-solid fa-at form-forms__icon"></i>
+                    <input
+                     type="email"
+                     id="email"
+                     class="form-forms__input"
+                     placeholder="nome@email.com"
+                    >
+                </div>
+            </div>
+
+            <div class="form-forms__group">
+                <div class="form-forms__label-row">
+                    <label for="senha" class="form-forms__label">Senha</label>
+                    <p class="form-forms__reset-link">Resetar Chave</p>
+                </div>
+
+                <div class="form-forms__input-wrapper">
+                    <i class="fa-solid fa-lock form-forms__icon"></i>
+                    <input
+                     type="password"
+                     id="senha"
+                     class="form-forms__input"
+                     placeholder="Sua senha"
+                     minlength="8"
+                    >
+                    <i class="fa-solid fa-eye form-forms__icon form-forms__icon--toggle" id="toggleSenha"></i>
+                </div>
+            </div>
+
+            <button class="form-body__btn">Fazer Cadastro <i class="fa-solid fa-arrow-right"></i></button>
+            <a href="login.html" class="registro-link">Já tem uma conta? Faça o login</a>
+        </div>
+    </div>
+
+    <script src="src/scripts/cadastro.js"></script>
+</body>
+</html>

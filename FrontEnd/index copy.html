@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="src/styles/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.0/css/all.min.css">
+
+    <title>Autonomoz | Login</title>
+</head>
+<body>
+    <div class="form-div">
+        <div class="form-header">
+            <h2>AutonoMoz</h2>
+            <p class="subtitulo">Sistema Avançado de Gestão</p>
+        </div>
+
+        <div class="form-body">
+            <div class="form-btns">
+                <p>Insira suas credenciais para acessar o sistema</p>
+                <div class="form-btns__grid">
+                    <button class="form-btns__btn">
+                        <i class="fa-solid fa-user-gear"></i>
+                        <p>Gerente</p>
+                    </button>
+                    <button class="form-btns__btn">
+                        <i class="fa-solid fa-box-archive"></i>
+                        <p>Estoquista</p>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-forms__group">
+                <label for="email" class="form-forms__label">Email</label>
+                <div class="form-forms__input-wrapper">
+                    <i class="fa-solid fa-at form-forms__icon"></i>
+                    <input
+                     type="email"
+                     id="email"
+                     class="form-forms__input"
+                     placeholder="nome@email.com"
+                    >
+                </div>
+            </div>
+
+            <div class="form-forms__group">
+                <div class="form-forms__label-row">
+                    <label for="senha" class="form-forms__label">Senha</label>
+                    <p class="form-forms__reset-link">Resetar Chave</p>
+                </div>
+
+                <div class="form-forms__input-wrapper">
+                    <i class="fa-solid fa-lock form-forms__icon"></i>
+                    <input
+                     type="password"
+                     id="senha"
+                     class="form-forms__input"
+                     placeholder="Sua senha"
+                    >
+                    <i class="fa-solid fa-eye form-forms__icon form-forms__icon--toggle" id="toggleSenha"></i>
+                </div>
+            </div>
+
+            <button class="form-body__btn">Iniciar Sessão <i class="fa-solid fa-arrow-right"></i></button>
+            <a href="cadastro.html" class="registro-link">Esqueceu seu acesso? Registre-se</a>
+        </div>
+    </div>
+    
+    <script src="src/scripts/login.js"></script>
+</body>
+</html>

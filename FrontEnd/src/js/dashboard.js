@@ -7,14 +7,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const produtos = await resposta.json();
         
         // Atualiza indicadores
-        document.getElementById('dash-total-itens').innerText = produtos.length;
+        document.querySelector('#dash-total-itens').innerText = produtos.length;
         
         // Conta alertas de estoque crítico (quantidade <= 5 por exemplo)
         const criticos = produtos.filter(p => p.quantidade <= 5).length;
-        document.getElementById('dash-alertas').innerText = criticos;
+        document.querySelector('#dash-alertas').innerText = criticos;
 
         // Preenche últimas entradas na tabela
-        const tbody = document.getElementById('tabela-recentes');
+        const tbody = document.querySelector('#tabela-recentes');
         tbody.innerHTML = '';
 
         produtos.slice(0, 5).forEach(p => {
