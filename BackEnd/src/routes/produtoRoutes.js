@@ -28,4 +28,9 @@ router.put(
     ProdutoController.alterarDados
 )
 
+router.delete(
+    "/:id",
+    ProdutoController.desativarProduto
+)
+
 module.exports = router

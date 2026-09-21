@@ -55,6 +55,18 @@ class LoteController {
             })
         }
     }
+
+    async excluir(req, res) {
+        try {
+            const resultado = await LoteService.excluir(req.params.id)
+
+            res.json(resultado)
+        } catch (erro) {
+            res.status(erro.status || 500).json({
+                mensagem: erro.message || erro.mensagem
+            })
+        }
+    }
 }
 
 module.exports = new LoteController()

@@ -7,7 +7,7 @@ const path = require('path');
  * @param {string} base64String - Ex: "data:image/jpeg;base64,/9j/4AAQSk..."
  * @returns {string|null} - Retorna o nome do arquivo gerado
  */
-function salvarImagemBase64(base64String) {
+function salvarFotoBase64(base64String) {
     if (!base64String) return null;
 
     // Extrai a extensão (png, jpeg, webp) e o conteúdo em bytes
@@ -37,4 +37,4 @@ function salvarImagemBase64(base64String) {
     return nomeArquivo;
 }
 
-module.exports = { salvarImagemBase64 };
+module.exports = { salvarFotoBase64 };

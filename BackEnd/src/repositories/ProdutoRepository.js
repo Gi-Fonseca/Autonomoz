@@ -4,7 +4,7 @@ class ProdutoRepository {
     // Lista produtos
     async listarProdutos() {
         const [rows] = await pool.query(
-            "SELECT * FROM produtos"
+            "SELECT * FROM produtos WHERE status = 1"
         )
 
         return rows
@@ -90,6 +90,14 @@ class ProdutoRepository {
             valores
         )
 
+        return resultado.affectedRows
+    }
+
+    async desativarProduto(id){
+        const [resultado] = await pool.query(
+            `UPDATE produtos SET status = 0 WHERE id_produto = ?`,
+            [id]
+        )
         return resultado.affectedRows
     }
 }
