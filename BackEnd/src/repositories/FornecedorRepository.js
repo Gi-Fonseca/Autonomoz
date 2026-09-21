@@ -1,49 +1,53 @@
-const pool = require('../config/database.js')
-
+const pool = require("../config/database");
+const { traduzirErroBanco } = require("../utils/databaseError");
 class FornecedorRepository {
-    // Lista fornecedores
-    async listar() {
-        const [fornecedores] = await pool.query('SELECT * FROM fornecedor')
-        return fornecedores
+  async listar() {
+    const [rows] = await pool.query(
+      "SELECT id_fornecedor, nome, cnpj, telefone, email FROM fornecedor",
+    );
+    return rows;
+  }
+  async buscarPorId(id) {
+    const [rows] = await pool.query(
+      "SELECT id_fornecedor, nome, cnpj, telefone, email FROM fornecedor WHERE id_fornecedor = ?",
+      [id],
+    );
+    return rows[0];
+  }
+  async criar(dados) {
+    const [result] = await pool.query(
+      "INSERT INTO fornecedor (nome, cnpj, telefone, email) VALUES (?, ?, ?, ?)",
+      [dados.nome, dados.cnpj, dados.telefone, dados.email],
+    );
+    return result.insertId;
+  }
+  async atualizar(id, dados) {
+    const permitidos = ["nome", "cnpj", "telefone", "email"];
+    const campos = [];
+    const valores = [];
+    for (const campo of permitidos)
+      if (dados[campo] !== undefined) {
+        campos.push(campo + " = ?");
+        valores.push(dados[campo]);
+      }
+    if (!campos.length) return 0;
+    valores.push(id);
+    const [result] = await pool.query(
+      "UPDATE fornecedor SET " + campos.join(", ") + " WHERE id_fornecedor = ?",
+      valores,
+    );
+    return result.affectedRows;
+  }
+  async excluir(id) {
+    try {
+      const [result] = await pool.query(
+        "DELETE FROM fornecedor WHERE id_fornecedor = ?",
+        [id],
+      );
+      return result.affectedRows;
+    } catch (erro) {
+      throw traduzirErroBanco(erro);
     }
-
-    // Busca fornecedor
-    async buscarPorId(id) {
-        const [fornecedores] = await pool.query(
-            'SELECT * FROM fornecedor WHERE id_fornecedor = ?',
-            [id]
-        )
-        return fornecedores[0]
-    }
-
-    // Cria fornecedor
-    async criar(dados) {
-        const { nome, cnpj, telefone, email } = dados
-        const [resultado] = await pool.query(
-            'INSERT INTO fornecedor (nome, cnpj, telefone, email) VALUES (?, ?, ?, ?)',
-            [nome, cnpj, telefone, email]
-        )
-        return resultado.insertId
-    }
-
-    // Atualiza fornecedor
-    async atualizar(id, dados) {
-        const { nome, cnpj, telefone, email } = dados
-        const [resultado] = await pool.query(
-            'UPDATE fornecedor SET nome = ?, cnpj = ?, telefone = ?, email = ? WHERE id_fornecedor = ?',
-            [nome, cnpj, telefone, email, id]
-        )
-        return resultado.affectedRows
-    }
-
-    // Exclui fornecedor
-    async excluir(id) {
-        const [resultado] = await pool.query(
-            'DELETE FROM fornecedor WHERE id_fornecedor = ?',
-            [id]
-        )
-        return resultado.affectedRows
-    }
+  }
 }
-
-module.exports = new FornecedorRepository()
+module.exports = new FornecedorRepository();

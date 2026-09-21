@@ -9,10 +9,11 @@ router.put("/:id", SaidaController.atualizar);
 
 // Bloqueio do DELETE para preservar o histórico
 router.delete("/:id", (req, res) => {
-    return res.status(405).json({
-        sucesso: false,
-        mensagem: "Operação não permitida: Saídas constituem registros históricos de movimentação. Para correções, realize um lançamento de ajuste via POST."
-    });
+  return res.status(405).json({
+    sucesso: false,
+    mensagem:
+      "Operação não permitida: Saídas constituem registros históricos de movimentação. Para correções, realize um lançamento de ajuste via POST.",
+  });
 });
 
 module.exports = router;

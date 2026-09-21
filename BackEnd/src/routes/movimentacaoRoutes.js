@@ -7,12 +7,12 @@ router.get("/:id", MovimentacaoController.buscarPorId);
 router.post("/", MovimentacaoController.cadastrar);
 router.put("/:id", MovimentacaoController.atualizar);
 
-// DELETE bloqueado para manter o histórico imutável
 router.delete("/:id", (req, res) => {
-    return res.status(405).json({
-        sucesso: false,
-        mensagem: "Operação não permitida: Movimentações constituem registros históricos imutáveis."
-    });
+  return res.status(405).json({
+    sucesso: false,
+    mensagem:
+      "Operação não permitida: movimentações constituem registros históricos imutáveis.",
+  });
 });
 
 module.exports = router;

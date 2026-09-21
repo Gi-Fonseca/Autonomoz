@@ -1,12 +1,14 @@
 const express = require("express");
 const router = express.Router();
-const FuncionarioController = require("../controllers/FuncionarioController");
+const controller = require("../controllers/FuncionarioController");
+const { autenticar, autorizar } = require("../middlewares/auth");
 
-
-router.get("/", FuncionarioController.listar);
-router.get("/:id", FuncionarioController.buscarPorId);
-router.post("/", FuncionarioController.cadastrar);
-router.put("/:id", FuncionarioController.atualizar);
-router.delete("/:id", FuncionarioController.deletar);
+router.post("/login", controller.login);
+router.use(autenticar);
+router.get("/", controller.listar);
+router.get("/:id", controller.buscarPorId);
+router.post("/", autorizar("Gerente"), controller.cadastrar);
+router.put("/:id", autorizar("Gerente"), controller.atualizar);
+router.delete("/:id", autorizar("Gerente"), controller.deletar);
 
 module.exports = router;
