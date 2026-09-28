@@ -160,6 +160,7 @@ CREATE TABLE movimentacao(
 -- parece um erro de cópia. Implementado da forma mais
 -- coerente possível — revise com o time antes de aplicar.
 -- =========================================================
+
 CREATE TABLE lote(
     id_lote INT AUTO_INCREMENT PRIMARY KEY,
     quantidade INT NOT NULL,
@@ -174,6 +175,7 @@ CREATE TABLE lote(
 -- tabela; foi adicionado "id_estoque" como chave substituta
 -- (surrogate key), já que a rota da API referencia "id_estoque".
 -- =========================================================
+
 CREATE TABLE estoque(
     id_estoque INT AUTO_INCREMENT PRIMARY KEY,
     id_produto INT NOT NULL,

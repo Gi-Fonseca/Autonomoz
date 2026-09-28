@@ -3,10 +3,15 @@ const cors = require("cors");
 const path = require("path");
 const routes = require("./routes");
 const app = express();
+const swaggerUi = require('swagger-ui-express');
+const swaggerFile = require('./swagger_output.json');
+
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerFile));
+
 
 // Contrato único: sucesso, mensagem e dados. Nunca expõe stack/erro interno.
 app.use((req, res, next) => {
