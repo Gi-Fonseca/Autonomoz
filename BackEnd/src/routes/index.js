@@ -3,7 +3,10 @@ const router = express.Router();
 const funcionarioRoutes = require("./funcionarioRoutes");
 const { autenticar } = require("../middlewares/auth");
 
+
 router.use("/funcionario", funcionarioRoutes);
+
+
 router.use(autenticar);
 router.use("/produto", require("./produtoRoutes"));
 router.use("/entrada", require("./entradaRoutes"));

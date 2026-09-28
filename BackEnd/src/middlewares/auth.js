@@ -9,25 +9,32 @@ function secret() {
 
 function autenticar(req, res, next) {
   const header = req.headers.authorization || "";
-  const [tipo, token] = header.split(" ");
-  if (tipo !== "Bearer" || !token) {
-    return res
-      .status(401)
-      .json({
-        sucesso: false,
-        mensagem: "Token de autenticação não informado",
-      });
+  const correspondencia = /^Bearer\s+(\S+)$/i.exec(header.trim());
+  if (!correspondencia) {
+    return res.status(401).json({
+      sucesso: false,
+      mensagem: "Token de autenticação não informado ou formato inválido",
+    });
   }
+
+  const token = correspondencia[1];
   try {
-    req.usuario = jwt.verify(token, secret(), { issuer: "autonomoz-api" });
+    const usuario = jwt.verify(token, secret(), {
+      issuer: "autonomoz-api",
+      algorithms: ["HS256"],
+    });
+
+    if (!usuario.id || !usuario.cargo) {
+      throw new Error("Token sem identidade ou cargo");
+    }
+
+    req.usuario = usuario;
     return next();
   } catch (erro) {
-    return res
-      .status(401)
-      .json({
-        sucesso: false,
-        mensagem: "Token de autenticação inválido ou expirado",
-      });
+    return res.status(401).json({
+      sucesso: false,
+      mensagem: "Token de autenticação inválido ou expirado",
+    });
   }
 }
 
