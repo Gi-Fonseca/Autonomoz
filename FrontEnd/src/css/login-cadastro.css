@@ -207,17 +207,16 @@ body {
     transition: var(--transition);
 }
 
-.form-body__btn:hover {
-    background-color: var(--primary-hover);
-    box-shadow: 0 4px 12px rgba(192, 0, 26, 0.25);
+/* Estado selecionado */
+.form-btns__btn.active {
+    border-color: var(--primary-color);
+    background-color: var(--primary-color);
+    color: var(--white);
 }
 
-.form-body__btn i {
-    transition: transform 0.2s ease;
-}
-
-.form-body__btn:hover i {
-    transform: translateX(4px);
+.form-btns__btn.active p,
+.form-btns__btn.active i {
+    color: var(--white);
 }
 
 /* Link Inferior */
