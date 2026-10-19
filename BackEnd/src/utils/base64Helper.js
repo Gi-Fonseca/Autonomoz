@@ -1,42 +1,53 @@
-// src/utils/uploadBase64.js
 const fs = require("fs");
 const path = require("path");
 
 /**
- * Decodifica uma string Base64 e salva como arquivo físico na pasta uploads/
- * @param {string} base64String - Ex: "data:image/jpeg;base64,/9j/4AAQSk..."
- * @returns {string|null} - Retorna o nome do arquivo gerado
+ * Decodifica uma string Base64 e salva o arquivo na pasta BackEnd/uploads.
+ * Exemplo aceito: data:image/jpeg;base64,/9j/4AAQSk...
+ *
+ * @param {string} base64String
+ * @returns {string|null} Nome do arquivo salvo.
  */
 function salvarImagemBase64(base64String) {
-  if (!base64String) return null;
+  if (!base64String) {
+    return null;
+  }
 
-  // Extrai a extensão (png, jpeg, webp) e o conteúdo em bytes
   const matches = base64String.match(
-    /^data:image\/([a-zA-Z0-9]+);base64,(.+)$/,
+    /^data:image\/(png|jpe?g|webp|gif);base64,(.+)$/i,
   );
 
   if (!matches || matches.length !== 3) {
     throw new Error("Formato de imagem Base64 inválido.");
   }
 
-  const extensao = matches[1];
-  const bufferDados = Buffer.from(matches[2], "base64");
+  const extensao = matches[1].toLowerCase().replace("jpeg", "jpg");
+  const conteudoBase64 = matches[2];
+  const bufferDados = Buffer.from(conteudoBase64, "base64");
 
-  // Gera um nome único (ex: img-1726317600000.png)
-  const nomeArquivo = `img-${Date.now()}.${extensao}`;
+  if (!bufferDados.length) {
+    throw new Error("Imagem Base64 vazia ou inválida.");
+  }
 
-  // Caminho da pasta uploads na raiz do BackEnd
   const caminhoPasta = path.join(__dirname, "../../uploads");
 
-  // Garante que a pasta uploads existe
   if (!fs.existsSync(caminhoPasta)) {
     fs.mkdirSync(caminhoPasta, { recursive: true });
   }
 
-  // Grava o arquivo no disco
+  const nomeArquivo = `img-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}.${extensao}`;
+
   fs.writeFileSync(path.join(caminhoPasta, nomeArquivo), bufferDados);
 
   return nomeArquivo;
 }
 
-module.exports = { salvarImagemBase64 };
+// Mantém compatibilidade com o nome usado anteriormente pelo controller.
+const salvarFotoBase64 = salvarImagemBase64;
+
+module.exports = {
+  salvarImagemBase64,
+  salvarFotoBase64,
+};
