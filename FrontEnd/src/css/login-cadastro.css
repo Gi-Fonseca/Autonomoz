@@ -185,5 +185,52 @@ body {
 
 .form-forms__input:focus + .form-forms__icon,
 .form-forms__input-wrapper:focus-within .form-forms__icon:not(.form-forms__icon--toggle) {
+    color: var(--primary-color); /* :focus do CSS é aplicada quando um elemento recebe foco, o que pode ocorrer quando o usuário seleciona o elemento*/
+}
+
+/* Botão Principal */
+.form-body__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 14px;
+    margin-top: 8px;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.form-body__btn:hover {
+    background-color: var(--primary-hover);
+    box-shadow: 0 4px 12px rgba(192, 0, 26, 0.25);
+}
+
+.form-body__btn i {
+    transition: transform 0.2s ease;
+}
+
+.form-body__btn:hover i {
+    transform: translateX(4px);
+}
+
+/* Link Inferior */
+.registro-link {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-top: 4px;
+    transition: var(--transition);
+}
+
+.registro-link:hover {
     color: var(--primary-color);
+    text-decoration: underline;
 }
