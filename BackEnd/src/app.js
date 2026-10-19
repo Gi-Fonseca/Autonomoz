@@ -17,12 +17,13 @@ const allowedOrigins = (process.env.CORS_ORIGINS || "")
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Permite chamadas sem cabeçalho Origin, como Postman e curl.
+      // Permite chamadas sem cabeçalho Origin, como o próprio frontend,
+      // Postman e curl.
       if (!origin) {
         return callback(null, true);
       }
 
-      if (allowedOrigins.includes(origin)) {
+      if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
@@ -36,6 +37,9 @@ app.use(
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
+// Serve o frontend estático pela mesma aplicação e pela mesma porta.
+app.use(express.static(path.join(__dirname, "../../FrontEnd")));
 
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
