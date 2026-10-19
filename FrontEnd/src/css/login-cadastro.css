@@ -107,3 +107,41 @@ body {
     color: var(--primary-color);
     background-color: var(--primary-color);
 }
+
+/* Campos de Entrada */
+.form-forms__group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-forms__label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.form-forms__label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.form-forms__reset-link {
+    font-size: 0.8rem;
+    color: var(--primary-color);
+    cursor: pointer;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.form-forms__reset-link:hover {
+    text-decoration: underline;
+    color: var(--primary-color);
+}
+
+.form-forms__input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
