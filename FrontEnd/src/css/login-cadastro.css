@@ -20,3 +20,33 @@ body {
     padding: 20px;
 }
 
+/*Container do Formulário */
+.form-div {
+    background-color: var(--white);
+    width: 100%;
+    max-width: 440px;
+    padding: 40px 32px;
+    border-radius: calc(var(--radius) * 1.5); /*• calc(...): É uma função nativa do CSS que permite realizar cálculos matemáticos diretamente nas folhas de estilo (adição, subtração, multiplicação e divisão).
+
+    • var(--radius): É uma variável CSS (também chamada de propriedade personalizada). Ela busca um valor que já foi definido anteriormente no código (por exemplo, --radius: 8px;).
+
+    • * 1.5: É o operador de multiplicação. Ele pega o valor guardado na variável --radius e o multiplica por 1,5.
+*/
+    box-shadow: 0 10px 25px;
+    border: 1px solid var(--border-color);
+}
+
+/* Cabeçalho */
+.form-header {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.form-header h2 {
+    color: var(--primary-color);
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.5; /* define o espaço entre caracteres, ajustando a legibilidade e a estética do texto.*/
+    margin-bottom: 4px;
+}
+
