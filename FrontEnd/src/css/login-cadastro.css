@@ -145,3 +145,45 @@ body {
     display: flex;
     align-items: center;
 }
+
+.form-forms__icon {
+    position: absolute;
+    left: 14px;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    pointer-events: none;
+    transition: var(--transition);
+}
+
+.form-forms__icon--toggle {
+    left: auto;
+    right: 14px;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.form-forms__icon--toggle:hover {
+    color: var(--primary-color);
+}
+
+.form-forms__input {
+    width: 100%;
+    padding: 12px 14px 12px 40px;
+    font-size: 0.95rem;
+    color: var(--text-dark);
+    background-color: var(--white);
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius);
+    outline: none;
+    transition: var(--transition);
+}
+
+.form-forms__input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px var(--primary-light);
+}
+
+.form-forms__input:focus + .form-forms__icon,
+.form-forms__input-wrapper:focus-within .form-forms__icon:not(.form-forms__icon--toggle) {
+    color: var(--primary-color);
+}
