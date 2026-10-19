@@ -1,0 +1,22 @@
+:root {
+    --primary-color: #C0001A;
+    --primary-hover: #9e0015;
+    --primary-light: #c0001a14;
+    --bg-light: #f8f9fa;
+    --text-dark: #212529;
+    --text-muted: #495057;
+    --white: #ffffff;
+    --border-color: #dee2e6;
+    --radius: 8px;
+}
+
+body {
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    min-height: 100vh; /* Significa 100 viewport height (100% da altura da tela ou da janela visível do navegador)*/
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+

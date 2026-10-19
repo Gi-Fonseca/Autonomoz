@@ -28,7 +28,7 @@ body {
 
 .nav-link:hover {
     color: #C0001A !important;
-    background-color: rgba(192, 0, 26, 0.08) !important;
+    background-color: #c0001a14 !important;
 }
 
 /* Botões do Bootstrap em Vermelho */
