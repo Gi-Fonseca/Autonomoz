@@ -50,3 +50,29 @@ body {
     margin-bottom: 4px;
 }
 
+.subtitulo {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Corpo do Formulário */
+.form-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px,
+}
+
+.form-btns p {
+    font-size: flex;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+/* Seletor de Perfil (Gerente / Estoquista) */
+.form-btns__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap:12px
+}
