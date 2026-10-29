@@ -7,7 +7,13 @@ class EntradaController {
   // ========================== CADASTRAR ==========================
   async cadastrar(req, res) {
     try {
-      const dadosEntrada = req.body || {};
+      const dadosEntrada = {
+        ...(req.body || {}),
+        id_funcionario: req.usuario.id,
+        data_entrada: req.body?.data_entrada || new Date().toISOString().slice(0, 10),
+        valor_compra: req.body?.valor_compra ?? 0,
+        fornecedor: req.body?.fornecedor || "Movimentação manual",
+      };
 
       // Validar se o corpo da requisição veio vazio
       if (!req.body || Object.keys(req.body).length === 0) {

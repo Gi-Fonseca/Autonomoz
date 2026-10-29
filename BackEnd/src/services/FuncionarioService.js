@@ -20,6 +20,10 @@ class FuncionarioService {
     return { sucesso: true, dados: u };
   }
   async cadastrar(dados) {
+    const totalFuncionarios = await FuncionarioRepository.count();
+    if (totalFuncionarios >= 60) {
+      throw { status: 409, mensagem: "Limite de 60 funcionários atingido" };
+    }
     if (
       !dados ||
       !dados.cargo ||

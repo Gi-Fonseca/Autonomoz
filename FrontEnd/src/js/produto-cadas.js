@@ -61,16 +61,52 @@ function configurarFormularioProduto() {
   formulario.addEventListener("submit", async (evento) => {
     evento.preventDefault();
 
+    const arquivoFoto = document.getElementById("file-img")?.files?.[0];
+    if (arquivoFoto) {
+      const tiposAceitos = [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/gif",
+        "image/bmp",
+        "image/avif",
+      ];
+      if (!tiposAceitos.includes(arquivoFoto.type)) {
+        alert(
+          "Formato de imagem não aceito. Escolha PNG, JPG, JPEG, WEBP, GIF, BMP ou AVIF.",
+        );
+        return;
+      }
+      if (arquivoFoto.size > 10 * 1024 * 1024) {
+        alert("A imagem deve ter no máximo 10 MB.");
+        return;
+      }
+    }
+    const fotoBase64 = arquivoFoto
+      ? await converterArquivoParaBase64(arquivoFoto)
+      : null;
     const payload = {
       nome: document.getElementById("prod-nome").value.trim(),
+      descricao:
+        document.getElementById("prod-descricao")?.value.trim() || null,
+      tipo_item: document.getElementById("prod-tipo")?.value || "PECA",
       quantidade: Number(document.getElementById("prod-qtd").value),
+      estoque_minimo: Number(
+        document.getElementById("prod-estoque-minimo")?.value || 0,
+      ),
       id_categoria: Number(document.getElementById("prod-categoria").value),
       id_fornecedor: Number(document.getElementById("prod-fornecedor").value),
+      chassi: document.getElementById("prod-chassi")?.value.trim() || null,
+      placa: document.getElementById("prod-placa")?.value.trim() || null,
+      ano: document.getElementById("prod-ano")?.value
+        ? Number(document.getElementById("prod-ano").value)
+        : null,
+      fotoBase64,
       status: true,
     };
 
-    if (!payload.nome || !payload.quantidade || payload.quantidade < 0) {
-      alert("Preencha o nome e uma quantidade válida.");
+    if (!payload.nome || payload.quantidade < 0 || payload.estoque_minimo < 0) {
+      alert("Preencha o nome e informe quantidades válidas.");
       return;
     }
 
@@ -107,5 +143,15 @@ function configurarFormularioProduto() {
         botao.innerHTML = textoOriginal;
       }
     }
+  });
+}
+
+function converterArquivoParaBase64(arquivo) {
+  return new Promise((resolve, reject) => {
+    const leitor = new FileReader();
+    leitor.onload = () => resolve(leitor.result);
+    leitor.onerror = () =>
+      reject(new Error("Não foi possível ler a imagem selecionada."));
+    leitor.readAsDataURL(arquivo);
   });
 }

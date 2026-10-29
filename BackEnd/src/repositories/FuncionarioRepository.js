@@ -28,6 +28,11 @@ class FuncionarioRepository {
     );
     return rows[0];
   }
+  async count() {
+    const [rows] = await pool.query("SELECT COUNT(*) AS total FROM funcionario");
+    return Number(rows[0].total);
+  }
+
   async create(dados) {
     const [result] = await pool.query(
       "INSERT INTO funcionario (cargo,nome,cpf,email,senha) VALUES (?,?,?,?,?)",

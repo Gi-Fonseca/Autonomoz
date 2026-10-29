@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const funcionarioRoutes = require("./funcionarioRoutes");
-const { autenticar } = require("../middlewares/auth");
+const { autenticar, autorizar } = require("../middlewares/auth");
 
 
 router.use("/funcionario", funcionarioRoutes);
@@ -18,5 +18,7 @@ router.use("/cliente", require("./clienteRoutes"));
 router.use("/fornecedor", require("./fornecedorRoutes"));
 router.use("/ajuste", require("./ajusteRoutes"));
 router.use("/lote", require("./loteRoutes"));
+router.use("/relatorios", autorizar("Gerente"), require("./relatorioRoutes"));
+
 
 module.exports = router;

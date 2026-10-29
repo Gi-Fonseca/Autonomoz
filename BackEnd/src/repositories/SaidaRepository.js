@@ -48,13 +48,15 @@ class SaidaRepository {
 
       // 1. Cadastra a saída na tabela
       const querySaida = `
-                INSERT INTO saida_produto (id_produto, id_funcionario, quantidade, motivo_saida, valor_venda, nf)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO saida_produto (id_produto, id_funcionario, id_cliente, quantidade, data_saida, motivo_saida, valor_venda, nf)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `;
       const [resSaida] = await connection.execute(querySaida, [
         id_produto,
         id_funcionario,
+        dados.id_cliente || null,
         quantidade,
+        dados.data_saida || new Date().toISOString().slice(0, 10),
         motivo_saida,
         valor_venda || null,
         nf || null,
@@ -62,11 +64,27 @@ class SaidaRepository {
 
       // 2. Subtrai a quantidade do estoque do produto
       const queryEstoque = `
-                UPDATE produtos 
-                SET quantidade = quantidade - ? 
-                WHERE id_produto = ?
+                UPDATE produtos
+                SET quantidade = quantidade - ?
+                WHERE id_produto = ? AND quantidade >= ?
             `;
-      await connection.execute(queryEstoque, [quantidade, id_produto]);
+      const [estoqueAtualizado] = await connection.execute(queryEstoque, [
+        quantidade,
+        id_produto,
+        quantidade,
+      ]);
+      if (!estoqueAtualizado.affectedRows) {
+        const erro = new Error(
+          "Estoque insuficiente ou produto não encontrado.",
+        );
+        erro.status = 409;
+        throw erro;
+      }
+
+      await connection.execute(
+        "INSERT INTO movimentacao (id_saida) VALUES (?)",
+        [resSaida.insertId],
+      );
 
       await connection.commit();
 
@@ -111,13 +129,15 @@ class SaidaRepository {
       // Atualiza o registro da saída
       const queryUpdate = `
                 UPDATE saida_produto 
-                SET id_produto = ?, id_funcionario = ?, quantidade = ?, motivo_saida = ?, valor_venda = ?, nf = ?
+                SET id_produto = ?, id_funcionario = ?, id_cliente = ?, quantidade = ?, data_saida = ?, motivo_saida = ?, valor_venda = ?, nf = ?
                 WHERE id_saida = ?
             `;
       await connection.execute(queryUpdate, [
         id_produto,
         id_funcionario,
+        dados.id_cliente || null,
         quantidade,
+        dados.data_saida || new Date().toISOString().slice(0, 10),
         motivo_saida,
         valor_venda || null,
         nf || null,

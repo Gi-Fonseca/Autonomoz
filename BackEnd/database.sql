@@ -1,56 +1,6 @@
+
 CREATE DATABASE IF NOT EXISTS autonomoz_db;
 USE autonomoz_db;
-
--- =========================================================
--- TABELA FUNCIONÁRIO
--- =========================================================
-CREATE TABLE funcionario(
-	id INT UNIQUE PRIMARY KEY AUTO_INCREMENT,
-    cargo VARCHAR(100) NOT NULL,
-    nome VARCHAR(150) NOT NULL UNIQUE,
-    cpf VARCHAR(14) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    senha VARCHAR(100) NOT NULL,
-
-    CHECK(CHAR_LENGTH(cpf) >= 11),
-    CHECK (CHAR_LENGTH(senha) >= 8)
-);
-
--- =========================================================
--- TABELA CLIENTE (Destino/Cliente)
--- =========================================================
-CREATE TABLE cliente(
-	id_cliente INT AUTO_INCREMENT UNIQUE PRIMARY KEY,
-    nome VARCHAR(150) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    cadastro VARCHAR(14),
-
-    CHECK(CHAR_LENGTH(cadastro) >= 11)
-);
-
--- =========================================================
--- TABELA CATEGORIA
--- Classificação dos tipos de produtos (criada antes de
--- Produtos pois é referenciada por ela)
--- =========================================================
-CREATE TABLE categoria(
-    id_categoria INT AUTO_INCREMENT PRIMARY KEY,
-    tipo_produto VARCHAR(50) NOT NULL
-);
-
--- =========================================================
--- TABELA FORNECEDOR
--- Criada antes de Produtos pois é referenciada por ela
--- =========================================================
-CREATE TABLE fornecedor(
-    id_fornecedor INT AUTO_INCREMENT UNIQUE PRIMARY KEY,
-    nome VARCHAR(150) NOT NULL,
-    cnpj VARCHAR(14) NOT NULL,
-    telefone VARCHAR(13) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-
-    CHECK(CHAR_LENGTH(cnpj) >= 11)
-);
 
 -- =========================================================
 -- TABELA PRODUTOS
@@ -59,135 +9,123 @@ CREATE TABLE fornecedor(
 -- foi implementado como INT para garantir integridade
 -- referencial. Ajuste se a intenção era outra.
 -- =========================================================
-CREATE TABLE produtos(
-	id_produto INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(200) NOT NULL,
-    quantidade INT NOT NULL,
-    validade DATE NULL,
-    id_categoria INT NOT NULL,
-    id_fornecedor INT NOT NULL,
-    status BOOLEAN NOT NULL,
+-- Adiciona somente os campos usados pelo cadastro atualizado de produtos.
+-- O procedimento evita erro caso algum campo já exista.
+DROP PROCEDURE IF EXISTS adicionar_colunas_produtos_autonomoz;
+DELIMITER $$
+CREATE PROCEDURE adicionar_colunas_produtos_autonomoz()
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'descricao'
+    ) THEN
+        ALTER TABLE produtos ADD COLUMN descricao TEXT NULL AFTER nome;
+    END IF;
 
-    CHECK(quantidade >= 0),
-    FOREIGN KEY (id_categoria) REFERENCES categoria(id_categoria),
-    FOREIGN KEY (id_fornecedor) REFERENCES fornecedor(id_fornecedor)
-);
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'tipo_item'
+    ) THEN
+        ALTER TABLE produtos ADD COLUMN tipo_item ENUM('PECA', 'VEICULO') NOT NULL DEFAULT 'PECA' AFTER descricao;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'estoque_minimo'
+    ) THEN
+        ALTER TABLE produtos ADD COLUMN estoque_minimo INT NOT NULL DEFAULT 0 AFTER quantidade;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'chassi'
+    ) THEN
+        ALTER TABLE produtos ADD COLUMN chassi VARCHAR(50) NULL AFTER status;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'placa'
+    ) THEN
+        ALTER TABLE produtos ADD COLUMN placa VARCHAR(10) NULL AFTER chassi;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'ano'
+    ) THEN
+        ALTER TABLE produtos ADD COLUMN ano SMALLINT NULL AFTER placa;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'foto'
+    ) THEN
+        ALTER TABLE produtos ADD COLUMN foto VARCHAR(255) NULL AFTER ano;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saida_produto'
+          AND COLUMN_NAME = 'id_cliente' AND IS_NULLABLE = 'NO'
+    ) THEN
+        ALTER TABLE saida_produto MODIFY id_cliente INT NULL;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ajuste_produto' AND COLUMN_NAME = 'quantidade'
+    ) THEN
+        ALTER TABLE ajuste_produto ADD COLUMN quantidade INT NOT NULL DEFAULT 0 AFTER id_funcionario;
+    END IF;
+END$$
+DELIMITER ;
+
+CALL adicionar_colunas_produtos_autonomoz();
+DROP PROCEDURE IF EXISTS adicionar_colunas_produtos_autonomoz;
 
 -- =========================================================
--- TABELA ENTRADA_PRODUTO
--- Registra o recebimento de lote de mercadorias no estoque
+-- ÍNDICES DE PRODUTOS
+-- Índices opcionais para acelerar filtros e alertas.
 -- =========================================================
-CREATE TABLE entrada_produto(
-    id_entrada INT AUTO_INCREMENT PRIMARY KEY,
-    id_produto INT NOT NULL,
-    id_funcionario INT NOT NULL,
-    quantidade INT NOT NULL,
-    data_entrada DATE NOT NULL,
-    valor_compra DECIMAL(10,2) NOT NULL,
-    nf VARCHAR(255) NULL,
-    fornecedor VARCHAR(255) NOT NULL,
-
-    CHECK(quantidade > 0),
-    CHECK(valor_compra >= 0),
-    FOREIGN KEY (id_produto) REFERENCES produtos(id_produto),
-    FOREIGN KEY (id_funcionario) REFERENCES funcionario(id)
-);
-
--- =========================================================
--- TABELA SAIDA_PRODUTO
--- Registra as saídas de mercadorias (vendas, baixas, transferências)
--- =========================================================
-CREATE TABLE saida_produto(
-    id_saida INT AUTO_INCREMENT PRIMARY KEY,
-    id_produto INT NOT NULL,
-    id_funcionario INT NOT NULL,
-    id_cliente INT NOT NULL,
-    quantidade INT NOT NULL,
-    data_saida DATE NOT NULL,
-    motivo_saida VARCHAR(255) NOT NULL,
-    valor_venda DECIMAL(10,2) NULL,
-    nf VARCHAR(255) NULL,
-
-    CHECK(quantidade > 0),
-    CHECK(valor_venda IS NULL OR valor_venda >= 0),
-    FOREIGN KEY (id_produto) REFERENCES produtos(id_produto),
-    FOREIGN KEY (id_funcionario) REFERENCES funcionario(id),
-    FOREIGN KEY (id_cliente) REFERENCES cliente(id_cliente)
-);
-
--- =========================================================
--- TABELA AJUSTE_PRODUTO
--- Registra ajustes de mercadorias (quebra, troca, defeito...)
--- =========================================================
-CREATE TABLE ajuste_produto(
-    id_ajuste INT AUTO_INCREMENT PRIMARY KEY,
-    id_produto INT NOT NULL,
-    id_funcionario INT NOT NULL,
-    data_ajuste DATE NOT NULL,
-    motivo_ajuste VARCHAR(255) NOT NULL,
-
-    FOREIGN KEY (id_produto) REFERENCES produtos(id_produto),
-    FOREIGN KEY (id_funcionario) REFERENCES funcionario(id)
-);
-
--- =========================================================
--- TABELA MOVIMENTAÇÃO
--- Centraliza as transações operacionais (histórico de
--- entradas, saídas e ajustes). Apenas um dos campos
--- id_entrada, id_saida ou id_ajuste deve ser preenchido
--- por registro, conforme o tipo de movimentação.
--- =========================================================
-CREATE TABLE movimentacao(
-    id_movimentacao INT AUTO_INCREMENT PRIMARY KEY,
-    id_saida INT NULL,
-    id_entrada INT NULL,
-    id_ajuste INT NULL,
-
-    FOREIGN KEY (id_saida) REFERENCES saida_produto(id_saida),
-    FOREIGN KEY (id_entrada) REFERENCES entrada_produto(id_entrada),
-    FOREIGN KEY (id_ajuste) REFERENCES ajuste_produto(id_ajuste),
-
-    -- Garante que apenas um dos três seja preenchido por registro
-    CHECK (
-        (id_entrada IS NOT NULL) + (id_saida IS NOT NULL) + (id_ajuste IS NOT NULL) = 1
+SET @sql = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'CREATE INDEX idx_produtos_tipo_item ON produtos (tipo_item)',
+        'SELECT 1'
     )
+    FROM information_schema.statistics
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'produtos'
+      AND INDEX_NAME = 'idx_produtos_tipo_item'
 );
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
--- =========================================================
--- TABELA LOTE
--- Obs: a descrição do campo "quantidade" no documento está
--- inconsistente (texto fala de "FK -- Saida ID"), o que
--- parece um erro de cópia. Implementado da forma mais
--- coerente possível — revise com o time antes de aplicar.
--- =========================================================
-
-CREATE TABLE lote(
-    id_lote INT AUTO_INCREMENT PRIMARY KEY,
-    quantidade INT NOT NULL,
-
-    CHECK(quantidade >= 0)
+SET @sql = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'CREATE INDEX idx_produtos_estoque_minimo ON produtos (quantidade, estoque_minimo)',
+        'SELECT 1'
+    )
+    FROM information_schema.statistics
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'produtos'
+      AND INDEX_NAME = 'idx_produtos_estoque_minimo'
 );
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- =========================================================
--- TABELA ESTOQUE
--- Controla as posições físicas e saldos atuais dos produtos.
--- Obs: o documento não define uma PK explícita para esta
--- tabela; foi adicionado "id_estoque" como chave substituta
--- (surrogate key), já que a rota da API referencia "id_estoque".
+-- TABELA FUNCIONÁRIO
+-- Cria o administrador apenas se ele ainda não existir.
 -- =========================================================
-
-CREATE TABLE estoque(
-    id_estoque INT AUTO_INCREMENT PRIMARY KEY,
-    id_produto INT NOT NULL,
-    id_lote INT NOT NULL,
-    valor_unitario DECIMAL(10,2) NOT NULL,
-    localizacao VARCHAR(255) NOT NULL,
-    id_entrada INT NULL,
-    id_saida INT NULL,
-
-    CHECK(valor_unitario >= 0),
-    FOREIGN KEY (id_produto) REFERENCES produtos(id_produto),
-    FOREIGN KEY (id_lote) REFERENCES lote(id_lote),
-    FOREIGN KEY (id_entrada) REFERENCES entrada_produto(id_entrada),
-    FOREIGN KEY (id_saida) REFERENCES saida_produto(id_saida)
+-- Senha de login: Senha@123
+INSERT INTO funcionario (cargo, nome, cpf, email, senha)
+SELECT 'Gerente', 'Administrador', '11111111111', 'admin@autonomoz.com',
+       '$2b$12$sCdwkGzaqblYH9kH2.Jo3.uZ8DsLXZue50ZhEz0/0ETWoUEVbfI06'
+WHERE NOT EXISTS (
+    SELECT 1 FROM funcionario WHERE email = 'admin@autonomoz.com'
 );

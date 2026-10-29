@@ -96,4 +96,16 @@ app.use((req, res, next) => {
 
 app.use("/", routes);
 
+// Rotas de API inexistentes devem responder JSON, nunca a página HTML padrão do Express.
+app.use((req, res, next) => {
+  if (req.path.startsWith("/relatorios")) {
+    return res.status(404).json({
+      sucesso: false,
+      mensagem:
+        "Rota de relatório não encontrada. Reinicie o backend atualizado.",
+    });
+  }
+  return next();
+});
+
 module.exports = app;

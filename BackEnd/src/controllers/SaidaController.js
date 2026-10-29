@@ -36,7 +36,12 @@ class SaidaController {
   // Cadastrar Saída (COM FOTO DA VISTORIA DE SAÍDA)
   async cadastrar(req, res) {
     try {
-      const dadosSaida = req.body || {};
+      const dadosSaida = {
+        ...(req.body || {}),
+        id_funcionario: req.usuario.id,
+        id_cliente: req.body?.id_cliente || null,
+        data_saida: req.body?.data_saida || new Date().toISOString().slice(0, 10),
+      };
 
       if (!req.body || Object.keys(req.body).length === 0) {
         return res.status(400).json({

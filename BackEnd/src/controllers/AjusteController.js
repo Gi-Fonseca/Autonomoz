@@ -31,7 +31,11 @@ class AjusteController {
   // Cria ajuste (COM FOTO DE COMPROVAÇÃO/AVARIA)
   async criar(req, res) {
     try {
-      const dadosAjuste = req.body || {};
+      const dadosAjuste = {
+        ...(req.body || {}),
+        id_funcionario: req.usuario.id,
+        data_ajuste: req.body?.data_ajuste || new Date().toISOString().slice(0, 10),
+      };
 
       if (!req.body || Object.keys(req.body).length === 0) {
         return res.status(400).json({

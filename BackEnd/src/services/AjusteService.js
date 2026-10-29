@@ -19,11 +19,15 @@ class AjusteService {
       !dados.id_produto ||
       !dados.id_funcionario ||
       !dados.data_ajuste ||
+      dados.quantidade === undefined ||
+      Number.isNaN(Number(dados.quantidade)) ||
+      Number(dados.quantidade) === 0 ||
       !dados.motivo_ajuste
     )
       throw {
         status: 400,
-        mensagem: "Todos os campos do ajuste são obrigatórios",
+        mensagem:
+          "Produto, funcionário, quantidade, data e motivo do ajuste são obrigatórios",
       };
     const id = await AjusteRepository.criar(dados);
     return { id_ajuste: id, ...dados };

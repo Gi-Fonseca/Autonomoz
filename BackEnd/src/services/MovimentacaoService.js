@@ -1,67 +1,41 @@
 const MovimentacaoRepository = require("../repositories/MovimentacaoRepository");
 
+function validarId(id) {
+  if (!id || isNaN(id)) throw { status: 400, mensagem: "ID de movimentação inválido." };
+}
+
+function validarRelacionamento(dados) {
+  const quantidade = [dados.id_entrada, dados.id_saida, dados.id_ajuste].filter(Boolean).length;
+  if (quantidade !== 1) {
+    throw { status: 400, mensagem: "Informe exatamente uma entrada, saída ou ajuste." };
+  }
+}
+
 class MovimentacaoService {
   async listar() {
-    return await MovimentacaoRepository.listar();
+    const dados = await MovimentacaoRepository.listar();
+    return { sucesso: true, dados, total: dados.length };
   }
 
   async buscarPorId(id) {
-    if (!id || isNaN(id)) {
-      const erro = new Error("ID de movimentação inválido.");
-      erro.status = 400;
-      throw erro;
-    }
-    return await MovimentacaoRepository.buscarPorId(id);
+    validarId(id);
+    return { sucesso: true, dados: await MovimentacaoRepository.buscarPorId(id) };
   }
 
-  async cadastrar(dados) {
-    const { id_estoque, id_entrada, id_saida } = dados;
-
-    if (!id_estoque) {
-      const erro = new Error("O campo 'id_estoque' é obrigatório.");
-      erro.status = 400;
-      throw erro;
-    }
-
-    if (!id_entrada && !id_saida) {
-      const erro = new Error(
-        "A movimentação deve ter pelo menos um 'id_entrada' OU 'id_saida'.",
-      );
-      erro.status = 400;
-      throw erro;
-    }
-
-    return await MovimentacaoRepository.cadastrar(dados);
+  async cadastrar(dados = {}) {
+    validarRelacionamento(dados);
+    return { sucesso: true, dados: await MovimentacaoRepository.cadastrar(dados) };
   }
 
-  async atualizar(id, dados) {
-    if (!id || isNaN(id)) {
-      const erro = new Error("ID de movimentação inválido.");
-      erro.status = 400;
-      throw erro;
-    }
-
-    const { id_estoque, id_entrada, id_saida } = dados;
-
-    if (!id_estoque || (!id_entrada && !id_saida)) {
-      const erro = new Error(
-        "Informe 'id_estoque' e pelo menos 'id_entrada' ou 'id_saida'.",
-      );
-      erro.status = 400;
-      throw erro;
-    }
-
-    return await MovimentacaoRepository.atualizar(id, dados);
+  async atualizar(id, dados = {}) {
+    validarId(id);
+    validarRelacionamento(dados);
+    return { sucesso: true, dados: await MovimentacaoRepository.atualizar(id, dados) };
   }
 
   async deletar(id) {
-    if (!id || isNaN(id)) {
-      const erro = new Error("ID de movimentação inválido.");
-      erro.status = 400;
-      throw erro;
-    }
-
-    return await MovimentacaoRepository.deletar(id);
+    validarId(id);
+    return { sucesso: true, dados: await MovimentacaoRepository.deletar(id) };
   }
 }
 

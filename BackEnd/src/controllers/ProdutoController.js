@@ -1,16 +1,16 @@
 const ProdutoService = require("../services/ProdutoService.js");
+const { salvarFotoBase64 } = require("../utils/base64Helper");
 
 class ProdutoController {
   // Lista produtos
   async listarProduto(req, res) {
     try {
-      const resultado = await ProdutoService.listarProdutos();
-
+      const resultado = await ProdutoService.listarProdutos(req.query);
       res.json(resultado);
     } catch (erro) {
       res.status(erro.status || 500).json({
         sucesso: false,
-        mensagem: erro.mensagem || "Erro interno do servidor",
+        mensagem: erro.mensagem || erro.sqlMessage || erro.message || "Erro interno do servidor",
         erro: erro.stack || erro,
       });
     }
@@ -20,12 +20,11 @@ class ProdutoController {
   async buscarProdutoId(req, res) {
     try {
       const resultado = await ProdutoService.buscarProdutoId(req.params.id);
-
       res.json(resultado);
     } catch (erro) {
       res.status(erro.status || 500).json({
         sucesso: false,
-        mensagem: erro.mensagem || "Erro interno no servidor",
+        mensagem: erro.mensagem || erro.sqlMessage || erro.message || "Erro interno no servidor",
         erro: erro.stack || erro,
       });
     }
@@ -34,13 +33,17 @@ class ProdutoController {
   // Cria produto
   async publicarProduto(req, res) {
     try {
-      const resultado = await ProdutoService.publicarProduto(req.body);
-
+      const dados = { ...(req.body || {}) };
+      if (dados.fotoBase64) {
+        dados.foto = salvarFotoBase64(dados.fotoBase64);
+        delete dados.fotoBase64;
+      }
+      const resultado = await ProdutoService.publicarProduto(dados);
       res.status(201).json(resultado);
     } catch (erro) {
       res.status(erro.status || 500).json({
         sucesso: false,
-        mensagem: erro.mensagem || "Erro interno no servidor",
+        mensagem: erro.mensagem || erro.sqlMessage || erro.message || "Erro interno no servidor",
         erro: erro.stack || erro,
       });
     }
@@ -49,17 +52,29 @@ class ProdutoController {
   // Atualiza produto
   async alterarDados(req, res) {
     try {
-      const resultado = await ProdutoService.alterarDados(
-        req.params.id,
-        req.body,
-      );
-
+      const dados = { ...(req.body || {}) };
+      if (dados.fotoBase64) {
+        dados.foto = salvarFotoBase64(dados.fotoBase64);
+        delete dados.fotoBase64;
+      }
+      const resultado = await ProdutoService.alterarDados(req.params.id, dados);
       res.json(resultado);
     } catch (erro) {
       res.status(erro.status || 500).json({
         sucesso: false,
-        mensagem: erro.mensagem || "Erro interno no servidor",
+        mensagem: erro.mensagem || erro.sqlMessage || erro.message || "Erro interno no servidor",
         erro: erro.stack || erro,
+      });
+    }
+  }
+
+  async listarAlertas(req, res) {
+    try {
+      return res.json(await ProdutoService.alertas());
+    } catch (erro) {
+      return res.status(erro.status || 500).json({
+        sucesso: false,
+        mensagem: erro.mensagem || erro.sqlMessage || erro.message || "Erro ao buscar alertas",
       });
     }
   }

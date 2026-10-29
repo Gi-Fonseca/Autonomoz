@@ -13,8 +13,9 @@ function salvarImagemBase64(base64String) {
     return null;
   }
 
-  const matches = base64String.match(
-    /^data:image\/(png|jpe?g|webp|gif);base64,(.+)$/i,
+  const valor = String(base64String).trim().replace(/\s/g, "");
+  const matches = valor.match(
+    /^data:image\/(png|jpe?g|webp|gif|bmp|avif);base64,([a-z0-9+/=]+)$/i,
   );
 
   if (!matches || matches.length !== 3) {

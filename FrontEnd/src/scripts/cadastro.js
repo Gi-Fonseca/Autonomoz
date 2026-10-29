@@ -1,4 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const usuario = obterUsuarioLogado();
+  if (!usuario || usuario.cargo !== "Gerente") {
+    alert("Apenas um Gerente pode cadastrar funcionários.");
+    window.location.href = usuario ? "gerencia.html" : "login.html";
+    return;
+  }
   configurarBotoesCargo();
   configurarAlternarSenha();
   configurarCPF();

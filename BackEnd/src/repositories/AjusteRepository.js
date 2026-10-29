@@ -18,20 +18,63 @@ class AjusteRepository {
 
   // Cria ajuste
   async criar(dados) {
-    const { id_produto, id_funcionario, data_ajuste, motivo_ajuste } = dados;
-    const [resultado] = await pool.query(
-      "INSERT INTO ajuste_produto (id_produto, id_funcionario, data_ajuste, motivo_ajuste) VALUES (?, ?, ?, ?)",
-      [id_produto, id_funcionario, data_ajuste, motivo_ajuste],
-    );
-    return resultado.insertId;
+    const {
+      id_produto,
+      id_funcionario,
+      quantidade,
+      data_ajuste,
+      motivo_ajuste,
+    } = dados;
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [resultado] = await connection.query(
+        "INSERT INTO ajuste_produto (id_produto, id_funcionario, quantidade, data_ajuste, motivo_ajuste) VALUES (?, ?, ?, ?, ?)",
+        [
+          id_produto,
+          id_funcionario,
+          quantidade || 0,
+          data_ajuste,
+          motivo_ajuste,
+        ],
+      );
+      await connection.query(
+        "UPDATE produtos SET quantidade = GREATEST(quantidade + ?, 0) WHERE id_produto = ?",
+        [quantidade || 0, id_produto],
+      );
+      await connection.query(
+        "INSERT INTO movimentacao (id_ajuste) VALUES (?)",
+        [resultado.insertId],
+      );
+      await connection.commit();
+      return resultado.insertId;
+    } catch (erro) {
+      await connection.rollback();
+      throw erro;
+    } finally {
+      connection.release();
+    }
   }
 
   // Atualiza ajuste
   async atualizar(id, dados) {
-    const { id_produto, id_funcionario, data_ajuste, motivo_ajuste } = dados;
+    const {
+      id_produto,
+      id_funcionario,
+      quantidade,
+      data_ajuste,
+      motivo_ajuste,
+    } = dados;
     const [resultado] = await pool.query(
-      "UPDATE ajuste_produto SET id_produto = ?, id_funcionario = ?, data_ajuste = ?, motivo_ajuste = ? WHERE id_ajuste = ?",
-      [id_produto, id_funcionario, data_ajuste, motivo_ajuste, id],
+      "UPDATE ajuste_produto SET id_produto = ?, id_funcionario = ?, quantidade = ?, data_ajuste = ?, motivo_ajuste = ? WHERE id_ajuste = ?",
+      [
+        id_produto,
+        id_funcionario,
+        quantidade || 0,
+        data_ajuste,
+        motivo_ajuste,
+        id,
+      ],
     );
     return resultado.affectedRows;
   }

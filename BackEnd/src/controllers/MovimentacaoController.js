@@ -4,7 +4,7 @@ class MovimentacaoController {
   async listar(req, res) {
     try {
       const movimentacoes = await MovimentacaoService.listar();
-      return res.status(200).json({ sucesso: true, dados: movimentacoes });
+      return res.status(200).json(movimentacoes);
     } catch (erro) {
       return res.status(erro.status || 500).json({
         sucesso: false,
