@@ -1,5 +1,20 @@
 const SaidaRepository = require("../repositories/SaidaRepository");
 
+function validarMotivoSaida(valor) {
+  const motivo = typeof valor === "string" ? valor.trim() : "";
+  if (!motivo) {
+    const erro = new Error("O motivo da saída é obrigatório.");
+    erro.status = 400;
+    throw erro;
+  }
+  if (motivo.length > 255) {
+    const erro = new Error("O motivo da saída deve ter no máximo 255 caracteres.");
+    erro.status = 400;
+    throw erro;
+  }
+  return motivo;
+}
+
 class SaidaService {
   async listar() {
     return await SaidaRepository.listar();
@@ -15,7 +30,7 @@ class SaidaService {
   }
 
   async cadastrar(dados) {
-    const { id_produto, id_funcionario, quantidade, motivo_saida } = dados;
+    const { id_produto, id_funcionario, quantidade } = dados || {};
 
     if (!id_produto || !id_funcionario) {
       const erro = new Error(
@@ -31,14 +46,8 @@ class SaidaService {
       throw erro;
     }
 
-    // Validação obrigatória pois a coluna é NOT NULL na tabela
-    if (!motivo_saida || motivo_saida.trim() === "") {
-      const erro = new Error("O campo 'motivo_saida' é obrigatório.");
-      erro.status = 400;
-      throw erro;
-    }
-
-    return await SaidaRepository.cadastrar(dados);
+    const motivo_saida = validarMotivoSaida(dados.motivo_saida);
+    return SaidaRepository.cadastrar({ ...dados, motivo_saida });
   }
 
   async atualizar(id, dados) {
@@ -48,17 +57,17 @@ class SaidaService {
       throw erro;
     }
 
-    const { id_produto, id_funcionario, quantidade, motivo_saida } = dados;
-
-    if (!id_produto || !id_funcionario || !quantidade || !motivo_saida) {
+    const { id_produto, id_funcionario, quantidade } = dados || {};
+    if (!id_produto || !id_funcionario || !quantidade || quantidade <= 0) {
       const erro = new Error(
-        "Campos 'id_produto', 'id_funcionario', 'quantidade' e 'motivo_saida' são obrigatórios.",
+        "Campos 'id_produto', 'id_funcionario' e 'quantidade' são obrigatórios.",
       );
       erro.status = 400;
       throw erro;
     }
 
-    return await SaidaRepository.atualizar(id, dados);
+    const motivo_saida = validarMotivoSaida(dados.motivo_saida);
+    return SaidaRepository.atualizar(id, { ...dados, motivo_saida });
   }
 
   async deletar(id) {
@@ -67,7 +76,6 @@ class SaidaService {
       erro.status = 400;
       throw erro;
     }
-
     return await SaidaRepository.deletar(id);
   }
 }

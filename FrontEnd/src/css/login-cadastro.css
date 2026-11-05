@@ -233,3 +233,55 @@ body {
     color: var(--primary-color);
     text-decoration: underline;
 }
+
+.autonomoz-aviso {
+    position: fixed;
+    z-index: 9999;
+    top: 24px;
+    right: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: min(390px, calc(100vw - 32px));
+    padding: 14px 16px;
+    border: 1px solid transparent;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(31, 41, 55, 0.18);
+    color: #fff;
+    font: 600 0.92rem/1.35 'Inter', system-ui, sans-serif;
+    opacity: 0;
+    transform: translateY(-12px);
+    pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+}
+
+.autonomoz-aviso.visivel {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.autonomoz-aviso-sucesso { background: #16835b; }
+.autonomoz-aviso-erro { background: #c0001a; }
+.autonomoz-aviso-aviso { background: #b96b00; }
+.autonomoz-aviso-info { background: #3f4f68; }
+.autonomoz-aviso-icone {
+    display: grid;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    font-weight: 800;
+}
+.autonomoz-aviso-texto { flex: 1; }
+.autonomoz-aviso-fechar {
+    padding: 0 2px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
+}

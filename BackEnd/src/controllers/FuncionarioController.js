@@ -4,7 +4,7 @@ const { salvarFotoBase64 } = require("../utils/base64Helper");
 class FuncionarioController {
   async login(req, res) {
     try {
-      const { email, senha } = req.body || {};
+      const { email, senha, cargo } = req.body || {};
 
       if (!email || !senha) {
         return res.status(400).json({
@@ -13,7 +13,14 @@ class FuncionarioController {
         });
       }
 
-      return res.json(await FuncionarioService.login(email, senha));
+      if (!cargo) {
+        return res.status(400).json({
+          sucesso: false,
+          mensagem: "Selecione o cargo Gerente ou Estoquista.",
+        });
+      }
+
+      return res.json(await FuncionarioService.login(email, senha, cargo));
     } catch (erro) {
       return res.status(erro.status || 500).json({
         sucesso: false,

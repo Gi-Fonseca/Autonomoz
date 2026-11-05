@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const usuario = obterUsuarioLogado();
   if (!usuario || usuario.cargo !== "Gerente") {
-    alert("Apenas um Gerente pode cadastrar funcionários.");
+    mostrarAviso("Apenas um Gerente pode cadastrar funcionários.");
     window.location.href = usuario ? "gerencia.html" : "login.html";
     return;
   }
@@ -77,24 +77,24 @@ function configurarCadastro() {
     const senha = document.querySelector("#senha").value;
 
     if (!cargoSelecionado) {
-      alert("Selecione o cargo Gerente ou Estoquista.");
+      mostrarAviso("Selecione o cargo Gerente ou Estoquista.", "aviso");
       return;
     }
 
     if (!nome || !cpf || !email || !senha) {
-      alert("Preencha todos os campos obrigatórios.");
+      mostrarAviso("Preencha todos os campos obrigatórios.", "aviso");
       return;
     }
 
     if (senha.length < 8) {
-      alert("A senha deve ter no mínimo 8 caracteres.");
+      mostrarAviso("A senha deve ter no mínimo 8 caracteres.", "aviso");
       return;
     }
 
     const token = obterTokenJWT();
 
     if (!token) {
-      alert("Você precisa fazer login como Gerente para cadastrar um funcionário.");
+      mostrarAviso("Você precisa fazer login como Gerente para cadastrar um funcionário.");
       window.location.href = "login.html";
       return;
     }
@@ -123,11 +123,11 @@ function configurarCadastro() {
         throw new Error(resultado.mensagem || "Não foi possível cadastrar o funcionário.");
       }
 
-      alert("Funcionário cadastrado com sucesso!");
+      mostrarAviso("Funcionário cadastrado com sucesso!", "sucesso");
       window.location.href = "index.html";
     } catch (erro) {
       console.error("Erro ao cadastrar funcionário:", erro);
-      alert(erro.message || "Erro ao cadastrar funcionário.");
+      mostrarAviso(erro.message || "Erro ao cadastrar funcionário.");
     } finally {
       botao.disabled = false;
       botao.innerHTML = textoOriginal;

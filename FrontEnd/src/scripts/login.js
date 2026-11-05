@@ -4,13 +4,19 @@ document.addEventListener("DOMContentLoaded", () => {
   configurarLogin();
 });
 
+let cargoSelecionado = "";
+
 function configurarBotoesCargo() {
   const botoes = document.querySelectorAll(".form-btns__btn");
 
   botoes.forEach((botao) => {
     botao.addEventListener("click", () => {
+      const cargo = botao.querySelector("p")?.textContent.trim();
+      if (cargo !== "Gerente" && cargo !== "Estoquista") return;
+
       botoes.forEach((item) => item.classList.remove("active"));
       botao.classList.add("active");
+      cargoSelecionado = cargo;
     });
   });
 }
@@ -49,7 +55,12 @@ function configurarLogin() {
     const senha = senhaInput.value;
 
     if (!email || !senha) {
-      alert("Informe o e-mail e a senha.");
+      mostrarAviso("Informe o e-mail e a senha.");
+      return;
+    }
+
+    if (!cargoSelecionado) {
+      mostrarAviso("Selecione Gerente ou Estoquista antes de entrar.", "aviso");
       return;
     }
 
@@ -64,7 +75,7 @@ function configurarLogin() {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({ email, senha }),
+        body: JSON.stringify({ email, senha, cargo: cargoSelecionado }),
       });
 
       const resultado = await resposta.json();
@@ -81,11 +92,18 @@ function configurarLogin() {
         throw new Error("O backend não retornou um token de acesso válido.");
       }
 
+      const cargoRetornado = String(dados.usuario.cargo || "").trim().toLowerCase();
+      if (cargoRetornado !== cargoSelecionado.toLowerCase()) {
+        throw new Error(
+          "O perfil selecionado não corresponde ao cargo desta conta.",
+        );
+      }
+
       salvarSessaoJWT(dados.token, dados.usuario);
       window.location.href = "index.html";
     } catch (erro) {
       console.error("Erro no login:", erro);
-      alert(erro.message || "Não foi possível conectar ao backend.");
+      mostrarAviso(erro.message || "Não foi possível conectar ao backend.");
     } finally {
       botaoLogin.disabled = false;
       botaoLogin.innerHTML = textoOriginal;

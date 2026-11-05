@@ -62,6 +62,37 @@ async function fetchAutenticado(endpoint, opcoes = {}) {
 
 const apiFetch = fetchAutenticado;
 
+function mostrarAviso(mensagem, tipo = "erro", duracao = 4500) {
+  let aviso = document.getElementById("autonomoz-aviso");
+
+  if (!aviso) {
+    aviso = document.createElement("div");
+    aviso.id = "autonomoz-aviso";
+    aviso.setAttribute("role", "status");
+    document.body.appendChild(aviso);
+  }
+
+  const configuracao = {
+    sucesso: { classe: "sucesso", icone: "✓" },
+    erro: { classe: "erro", icone: "!" },
+    aviso: { classe: "aviso", icone: "!" },
+    info: { classe: "info", icone: "i" },
+  }[tipo] || { classe: "erro", icone: "!" };
+
+  aviso.className = `autonomoz-aviso autonomoz-aviso-${configuracao.classe}`;
+  aviso.innerHTML = `<span class="autonomoz-aviso-icone">${configuracao.icone}</span><span class="autonomoz-aviso-texto"></span><button type="button" class="autonomoz-aviso-fechar" aria-label="Fechar aviso">×</button>`;
+  aviso.querySelector(".autonomoz-aviso-texto").textContent = String(
+    mensagem || "",
+  );
+  aviso.querySelector(".autonomoz-aviso-fechar").onclick = () => {
+    aviso.classList.remove("visivel");
+  };
+
+  requestAnimationFrame(() => aviso.classList.add("visivel"));
+  clearTimeout(aviso._timer);
+  aviso._timer = setTimeout(() => aviso.classList.remove("visivel"), duracao);
+}
+
 function formatarMoeda(valor) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -73,26 +104,31 @@ function formatarData(dataIso) {
   if (!dataIso) return "-";
 
   try {
-    let data;
     if (typeof dataIso === "string") {
-      const mysql = dataIso.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+      // DATETIME do MySQL é um horário local sem fuso. Preserve os componentes
+      // como foram salvos, em vez de reinterpretá-los no fuso do navegador.
+      const mysql = dataIso.match(
+        /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?$/,
+      );
       if (mysql) {
-        data = new Date(Number(mysql[1]), Number(mysql[2]) - 1, Number(mysql[3]), Number(mysql[4] || 0), Number(mysql[5] || 0), Number(mysql[6] || 0));
-      } else {
-        data = new Date(dataIso);
+        const [, ano, mes, dia, hora = "00", minuto = "00"] = mysql;
+        return `${dia}/${mes}/${ano} ${hora}:${minuto}`;
       }
-    } else {
-      data = new Date(dataIso);
     }
+
+    const data = new Date(dataIso);
     if (Number.isNaN(data.getTime())) return String(dataIso);
+
     return data.toLocaleString("pt-BR", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      hourCycle: "h23",
+      timeZone: "America/Sao_Paulo",
     });
   } catch {
-    return dataIso;
+    return String(dataIso);
   }
 }

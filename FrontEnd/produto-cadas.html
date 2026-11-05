@@ -89,11 +89,9 @@
                                         </select>
                                     </div>
                                     <div class="col-md-3">
-                                        <label class="form-label fw-bold small text-muted">CATEGORIA</label>
-                                        <select id="prod-categoria" class="form-select" required>
-                                            <option value="1">Peças e Peças de Reposição</option>
-                                            <option value="2">Veículos da Frota</option>
-                                        </select>
+                                        <label class="form-label fw-bold small text-muted" for="prod-categoria">CATEGORIA</label>
+                                        <input id="prod-categoria" class="form-control" list="lista-categorias" placeholder="Digite a categoria" required>
+                                        <datalist id="lista-categorias"></datalist>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label fw-bold small text-muted">FORNECEDOR / MARCA</label>
@@ -107,6 +105,7 @@
                                         <input type="number" id="prod-qtd" class="form-control" value="1" min="0" required>
                                     </div>
                                 </div>
+                                <div class="row g-3 mt-1">
                                     <div class="col-md-3">
                                         <label class="form-label fw-bold small text-muted">ESTOQUE MÍNIMO</label>
                                         <input type="number" id="prod-estoque-minimo" class="form-control" value="0" min="0" required>
@@ -182,8 +181,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="src/js/config.js"></script>
-<script src="src/js/produto-cadas.js"></script>
-<script src="src/js/menu.js"></script>
+<script src="src/js/config.js?v=20261105-produto-digitavel"></script>
+<script src="src/js/produto-cadas.js?v=20261105-produto-digitavel"></script>
+<script src="src/js/menu.js?v=20261105-produto-digitavel"></script>
 </body>
 </html>

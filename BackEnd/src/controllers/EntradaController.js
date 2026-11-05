@@ -1,173 +1,94 @@
-const EntradaService = require("../services/EntradaService");
-const { salvarFotoBase64 } = require("../utils/base64Helper");
-const path = require("path");
-const fs = require("fs");
+const db = require("../config/database");
 
-class EntradaController {
-  // ========================== CADASTRAR ==========================
-  async cadastrar(req, res) {
+class EntradaRepository {
+  async cadastrar(dados) {
+    const {
+      id_produto,
+      id_funcionario,
+      quantidade,
+      data_entrada,
+      valor_compra,
+      nf,
+      fornecedor,
+      motivo_entrada,
+    } = dados;
+    const connection = await db.getConnection();
     try {
-      const dadosEntrada = {
-        ...(req.body || {}),
-        id_funcionario: req.usuario.id,
-        data_entrada: req.body?.data_entrada || new Date(),
-        valor_compra: req.body?.valor_compra ?? 0,
-        fornecedor: req.body?.fornecedor || "Movimentação manual",
-      };
-
-      // Validar se o corpo da requisição veio vazio
-      if (!req.body || Object.keys(req.body).length === 0) {
-        return res.status(400).json({
-          sucesso: false,
-          mensagem:
-            "Requisição sem corpo. Verifique o Content-Type e o payload JSON.",
-        });
-      }
-
-      // Tratamento da imagem Base64 (salva no servidor e envia apenas o nome do arquivo)
-      if (!dadosEntrada.foto && dadosEntrada.fotoBase64) {
-        const uploadDir = path.join(__dirname, "..", "..", "uploads");
-
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-
-        try {
-          const nomeArquivo = salvarFotoBase64(
-            dadosEntrada.fotoBase64,
-            uploadDir,
-          );
-          dadosEntrada.foto = nomeArquivo;
-          delete dadosEntrada.fotoBase64;
-        } catch (e) {
-          return res.status(400).json({
-            sucesso: false,
-            mensagem: "fotoBase64 inválida",
-            erro: e.message || e,
-          });
-        }
-      }
-
-      const resultado = await EntradaService.cadastrar(dadosEntrada);
-
-      return res.status(201).json({
-        sucesso: true,
-        mensagem: "Entrada registrada com sucesso!",
-        dados: resultado,
-      });
-    } catch (erro) {
-      return res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro ao registrar entrada de produto",
-        erro: erro.stack || erro,
-      });
+      await connection.beginTransaction();
+      const [result] = await connection.execute(
+        `INSERT INTO entrada_produto
+                 (id_produto, id_funcionario, quantidade, data_entrada, valor_compra, nf, fornecedor, motivo_entrada)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id_produto,
+          id_funcionario,
+          quantidade,
+          data_entrada,
+          valor_compra,
+          nf || null,
+          fornecedor,
+          motivo_entrada,
+        ],
+      );
+      await connection.execute(
+        "UPDATE produtos SET quantidade = quantidade + ? WHERE id_produto = ?",
+        [quantidade, id_produto],
+      );
+      await connection.execute(
+        "INSERT INTO movimentacao (id_entrada) VALUES (?)",
+        [result.insertId],
+      );
+      await connection.commit();
+      return { id_entrada: result.insertId, ...dados };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
     }
   }
-
-  async listar(req, res) {
-    try {
-      const entradas = await EntradaService.listar();
-      return res.status(200).json({
-        sucesso: true,
-        dados: entradas,
-      });
-    } catch (erro) {
-      return res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro ao buscar entradas",
-        erro: erro.stack || erro,
-      });
-    }
+  async listar() {
+    const [rows] = await db.execute(
+      `SELECT e.*, p.nome produto_nome, f.nome funcionario_nome FROM entrada_produto e LEFT JOIN produtos p ON e.id_produto=p.id_produto LEFT JOIN funcionario f ON e.id_funcionario=f.id ORDER BY e.id_entrada DESC`,
+    );
+    return rows;
   }
-
-  async buscarPorId(req, res) {
-    try {
-      const { id } = req.params;
-      const entrada = await EntradaService.buscarPorId(id);
-      return res.status(200).json({
-        sucesso: true,
-        dados: entrada,
+  async buscarPorId(id) {
+    const [rows] = await db.execute(
+      `SELECT e.*, p.nome produto_nome, f.nome funcionario_nome FROM entrada_produto e LEFT JOIN produtos p ON e.id_produto=p.id_produto LEFT JOIN funcionario f ON e.id_funcionario=f.id WHERE e.id_entrada=?`,
+      [id],
+    );
+    if (!rows.length)
+      throw Object.assign(new Error("Registro de entrada não encontrado."), {
+        status: 404,
       });
-    } catch (erro) {
-      return res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro ao buscar entrada",
-        erro: erro.stack || erro,
-      });
-    }
+    return rows[0];
   }
-  // ========================== ATUALIZAR ==========================
-  async atualizar(req, res) {
-    try {
-      const { id } = req.params;
-      const dadosEntrada = req.body || {};
-
-      // Validar se o corpo da requisição veio vazio
-      if (!req.body || Object.keys(req.body).length === 0) {
-        return res.status(400).json({
-          sucesso: false,
-          mensagem:
-            "Requisição sem corpo. Verifique o Content-Type e o payload JSON.",
-        });
-      }
-
-      // Tratamento da imagem Base64 caso envie uma nova foto na atualização
-      if (!dadosEntrada.foto && dadosEntrada.fotoBase64) {
-        const uploadDir = path.join(__dirname, "..", "..", "uploads");
-
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-
-        try {
-          const nomeArquivo = salvarFotoBase64(
-            dadosEntrada.fotoBase64,
-            uploadDir,
-          );
-          dadosEntrada.foto = nomeArquivo;
-          delete dadosEntrada.fotoBase64;
-        } catch (e) {
-          return res.status(400).json({
-            sucesso: false,
-            mensagem: "fotoBase64 inválida",
-            erro: e.message || e,
-          });
-        }
-      }
-
-      const resultado = await EntradaService.atualizar(id, dadosEntrada);
-
-      return res.status(200).json({
-        sucesso: true,
-        mensagem: "Entrada atualizada com sucesso!",
-        dados: resultado,
+  async atualizar(id, dados) {
+    const allowed = [
+      "id_produto",
+      "id_funcionario",
+      "quantidade",
+      "data_entrada",
+      "valor_compra",
+      "nf",
+      "fornecedor",
+      "motivo_entrada",
+    ];
+    const keys = allowed.filter((key) => dados[key] !== undefined);
+    if (!keys.length)
+      throw Object.assign(new Error("Nenhum campo válido informado."), {
+        status: 400,
       });
-    } catch (erro) {
-      return res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro ao atualizar entrada de produto",
-        erro: erro.stack || erro,
+    const [result] = await db.execute(
+      `UPDATE entrada_produto SET ${keys.map((key) => `${key}=?`).join(",")} WHERE id_entrada=?`,
+      [...keys.map((key) => dados[key]), id],
+    );
+    if (!result.affectedRows)
+      throw Object.assign(new Error("Registro de entrada não encontrado."), {
+        status: 404,
       });
-    }
-  }
-  async deletar(req, res) {
-    try {
-      const { id } = req.params;
-      const resultado = await EntradaService.deletar(id);
-
-      return res.status(200).json({
-        sucesso: true,
-        mensagem: "Entrada excluída com sucesso!",
-        dados: resultado,
-      });
-    } catch (erro) {
-      return res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro ao excluir entrada de produto",
-        erro: erro.stack || erro,
-      });
-    }
+    return { id_entrada: Number(id), ...dados };
   }
 }
-
-module.exports = new EntradaController();
+module.exports = new EntradaRepository();

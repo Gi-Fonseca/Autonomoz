@@ -2,9 +2,8 @@ const EntradaRepository = require("../repositories/EntradaRepository");
 
 class EntradaService {
   async cadastrar(dados) {
-    const { id_produto, id_funcionario, quantidade, valor_compra } = dados;
+    const { id_produto, id_funcionario, quantidade, valor_compra } = dados || {};
 
-    // Validação de Chaves Estrangeiras Obrigatórias
     if (!id_produto || !id_funcionario) {
       const erro = new Error(
         "Campos 'id_produto' e 'id_funcionario' são obrigatórios.",
@@ -13,14 +12,12 @@ class EntradaService {
       throw erro;
     }
 
-    // Validação da Quantidade (NOT NULL e deve ser maior que 0)
     if (quantidade === undefined || quantidade === null || quantidade <= 0) {
       const erro = new Error("A quantidade inserida deve ser maior que zero.");
       erro.status = 400;
       throw erro;
     }
 
-    // Validação do Valor da Compra (CHECK >= 0)
     if (
       valor_compra === undefined ||
       valor_compra === null ||
@@ -33,8 +30,9 @@ class EntradaService {
       throw erro;
     }
 
-    return await EntradaRepository.cadastrar(dados);
+    return EntradaRepository.cadastrar(dados);
   }
+
   async listar() {
     return await EntradaRepository.listar();
   }
@@ -47,7 +45,6 @@ class EntradaService {
     }
     return await EntradaRepository.buscarPorId(id);
   }
-  // Adicione este método no seu EntradaService.js se ainda não tiver adicionado:
 
   async atualizar(id, dados) {
     if (!id || isNaN(id)) {
@@ -56,8 +53,9 @@ class EntradaService {
       throw erro;
     }
 
-    const { id_produto, id_funcionario } = dados;
+    const atualizacao = { ...(dados || {}) };
 
+    const { id_produto, id_funcionario } = atualizacao;
     if (!id_produto || !id_funcionario) {
       const erro = new Error(
         "Campos 'id_produto' e 'id_funcionario' são obrigatórios.",
@@ -66,8 +64,9 @@ class EntradaService {
       throw erro;
     }
 
-    return await EntradaRepository.atualizar(id, dados);
+    return await EntradaRepository.atualizar(id, atualizacao);
   }
+
   async deletar(id) {
     if (!id || isNaN(id)) {
       const erro = new Error("ID da entrada inválido.");

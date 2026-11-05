@@ -7,7 +7,8 @@ class MovimentacaoRepository {
       SELECT * FROM (
         SELECT e.id_entrada AS referencia_id, e.data_entrada AS data_movimentacao,
                'ENTRADA' AS tipo, e.quantidade, p.nome AS produto_nome,
-               f.nome AS funcionario_nome, CONCAT('NF: ', COALESCE(e.nf, '-')) AS motivo
+               f.nome AS funcionario_nome,
+               CONCAT('NF: ', COALESCE(e.nf, '-')) AS motivo
         FROM entrada_produto e
         LEFT JOIN produtos p ON p.id_produto = e.id_produto
         LEFT JOIN funcionario f ON f.id = e.id_funcionario

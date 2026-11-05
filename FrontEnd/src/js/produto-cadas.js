@@ -1,8 +1,11 @@
 document.addEventListener("DOMContentLoaded", async () => {
   verificarAutenticacao();
   await carregarSelects();
+  configurarCategoriaPorTipo();
   configurarFormularioProduto();
 });
+
+let categoriasDisponiveis = [];
 
 async function lerDadosResposta(resposta) {
   const resultado = await resposta.json();
@@ -26,12 +29,8 @@ async function carregarSelects() {
       const selectCategoria = document.getElementById("prod-categoria");
 
       if (selectCategoria && Array.isArray(categorias)) {
-        selectCategoria.innerHTML = categorias
-          .map(
-            (categoria) =>
-              `<option value="${categoria.id_categoria}">${categoria.tipo_produto}</option>`,
-          )
-          .join("");
+        categoriasDisponiveis = categorias;
+        atualizarCategoriasPorTipo();
       }
     }
 
@@ -53,6 +52,32 @@ async function carregarSelects() {
   }
 }
 
+function categoriaPertenceAoTipo(categoria, tipo) {
+  const nome = String(categoria?.tipo_produto || "").toLowerCase();
+  if (tipo === "VEICULO") return nome.includes("veícul") || nome.includes("veicul");
+  return nome.includes("peç") || nome.includes("peca") || nome.includes("reposição") || nome.includes("reposicao");
+}
+
+function atualizarCategoriasPorTipo() {
+  const selectTipo = document.getElementById("prod-tipo");
+  const listaCategorias = document.getElementById("lista-categorias");
+  if (!selectTipo || !listaCategorias) return;
+
+  listaCategorias.innerHTML = categoriasDisponiveis
+    .map(
+      (categoria) =>
+        `<option value="${escaparHtml(categoria.tipo_produto)}"></option>`,
+    )
+    .join("");
+}
+
+function configurarCategoriaPorTipo() {
+  document
+    .getElementById("prod-tipo")
+    ?.addEventListener("change", atualizarCategoriasPorTipo);
+  atualizarCategoriasPorTipo();
+}
+
 function configurarFormularioProduto() {
   const formulario = document.getElementById("formProdutoCompleto");
 
@@ -72,19 +97,27 @@ function configurarFormularioProduto() {
         "image/avif",
       ];
       if (!tiposAceitos.includes(arquivoFoto.type)) {
-        alert(
+        mostrarAviso(
           "Formato de imagem não aceito. Escolha PNG, JPG, JPEG, WEBP, GIF, BMP ou AVIF.",
         );
         return;
       }
       if (arquivoFoto.size > 10 * 1024 * 1024) {
-        alert("A imagem deve ter no máximo 10 MB.");
+        mostrarAviso("A imagem deve ter no máximo 10 MB.", "aviso");
         return;
       }
     }
     const fotoBase64 = arquivoFoto
       ? await converterArquivoParaBase64(arquivoFoto)
       : null;
+    const categoriaDigitada = document
+      .getElementById("prod-categoria")
+      .value.trim();
+    const categoriaExistente = categoriasDisponiveis.find(
+      (categoria) =>
+        String(categoria.tipo_produto).trim().toLowerCase() ===
+        categoriaDigitada.toLowerCase(),
+    );
     const payload = {
       nome: document.getElementById("prod-nome").value.trim(),
       descricao:
@@ -94,7 +127,10 @@ function configurarFormularioProduto() {
       estoque_minimo: Number(
         document.getElementById("prod-estoque-minimo")?.value || 0,
       ),
-      id_categoria: Number(document.getElementById("prod-categoria").value),
+      categoria: categoriaDigitada,
+      id_categoria: categoriaExistente
+        ? Number(categoriaExistente.id_categoria)
+        : null,
       id_fornecedor: Number(document.getElementById("prod-fornecedor").value),
       chassi: document.getElementById("prod-chassi")?.value.trim() || null,
       placa: document.getElementById("prod-placa")?.value.trim() || null,
@@ -105,8 +141,21 @@ function configurarFormularioProduto() {
       status: true,
     };
 
+    const categoriaSelecionada = categoriaExistente;
+    if (
+      !payload.categoria ||
+      (categoriaSelecionada &&
+        !categoriaPertenceAoTipo(categoriaSelecionada, payload.tipo_item))
+    ) {
+      mostrarAviso(
+        "Digite uma categoria válida e compatível com o tipo escolhido.",
+        "aviso",
+      );
+      return;
+    }
+
     if (!payload.nome || payload.quantidade < 0 || payload.estoque_minimo < 0) {
-      alert("Preencha o nome e informe quantidades válidas.");
+      mostrarAviso("Preencha o nome e informe quantidades válidas.", "aviso");
       return;
     }
 
@@ -132,11 +181,11 @@ function configurarFormularioProduto() {
         throw new Error(resultado.mensagem || "Erro ao salvar produto.");
       }
 
-      alert("Produto cadastrado com sucesso!");
+      mostrarAviso("Produto cadastrado com sucesso!", "sucesso");
       window.location.href = "inventario.html";
     } catch (erro) {
       console.error("Erro ao salvar produto:", erro);
-      alert(erro.message || "Erro ao salvar produto.");
+      mostrarAviso(erro.message || "Erro ao salvar produto.");
     } finally {
       if (botao) {
         botao.disabled = false;
@@ -144,6 +193,16 @@ function configurarFormularioProduto() {
       }
     }
   });
+}
+
+function escaparHtml(valor) {
+  return String(valor ?? "").replace(
+    /[&<>'"]/g,
+    (caractere) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[
+        caractere
+      ],
+  );
 }
 
 function converterArquivoParaBase64(arquivo) {

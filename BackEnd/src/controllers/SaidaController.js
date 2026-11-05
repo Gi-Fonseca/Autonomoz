@@ -40,7 +40,7 @@ class SaidaController {
         ...(req.body || {}),
         id_funcionario: req.usuario.id,
         id_cliente: req.body?.id_cliente || null,
-        data_saida: req.body?.data_saida || new Date().toISOString().slice(0, 10),
+        data_saida: req.body?.data_saida || new Date(),
       };
 
       if (!req.body || Object.keys(req.body).length === 0) {

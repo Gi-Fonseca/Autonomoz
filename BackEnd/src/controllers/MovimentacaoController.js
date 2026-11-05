@@ -1,100 +1,87 @@
-const MovimentacaoService = require("../services/MovimentacaoService");
+const db = require("../config/database");
 
-class MovimentacaoController {
-  async listar(req, res) {
-    try {
-      const movimentacoes = await MovimentacaoService.listar();
-      return res.status(200).json(movimentacoes);
-    } catch (erro) {
-      return res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro ao buscar movimentações",
-        erro: erro.stack || erro,
-      });
-    }
+class MovimentacaoRepository {
+  // Lista o histórico consolidado de entradas, saídas e ajustes
+  async listar() {
+    const query = `
+      SELECT * FROM (
+        SELECT e.id_entrada AS referencia_id, e.data_entrada AS data_movimentacao,
+               'ENTRADA' AS tipo, e.quantidade, p.nome AS produto_nome,
+               f.nome AS funcionario_nome,
+               COALESCE(NULLIF(e.motivo_entrada, ''), CONCAT('NF: ', COALESCE(e.nf, '-'))) AS motivo
+        FROM entrada_produto e
+        LEFT JOIN produtos p ON p.id_produto = e.id_produto
+        LEFT JOIN funcionario f ON f.id = e.id_funcionario
+        UNION ALL
+        SELECT s.id_saida, s.data_saida, 'SAIDA', s.quantidade, p.nome,
+               f.nome, s.motivo_saida
+        FROM saida_produto s
+        LEFT JOIN produtos p ON p.id_produto = s.id_produto
+        LEFT JOIN funcionario f ON f.id = s.id_funcionario
+        UNION ALL
+        SELECT a.id_ajuste, a.data_ajuste, 'AJUSTE', a.quantidade, p.nome,
+               f.nome, a.motivo_ajuste
+        FROM ajuste_produto a
+        LEFT JOIN produtos p ON p.id_produto = a.id_produto
+        LEFT JOIN funcionario f ON f.id = a.id_funcionario
+      ) historico
+      ORDER BY data_movimentacao DESC, referencia_id DESC
+      LIMIT 500
+    `;
+    const [rows] = await db.execute(query);
+    return rows;
   }
 
-  async buscarPorId(req, res) {
-    try {
-      const { id } = req.params;
-      const movimentacao = await MovimentacaoService.buscarPorId(id);
-      return res.status(200).json({ sucesso: true, dados: movimentacao });
-    } catch (erro) {
-      return res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro ao buscar movimentação",
-        erro: erro.stack || erro,
-      });
+  // Busca movimentação
+  async buscarPorId(id) {
+    const [rows] = await db.execute(
+      "SELECT id_movimentacao, id_saida, id_entrada, id_ajuste FROM movimentacao WHERE id_movimentacao = ?",
+      [id],
+    );
+    if (!rows.length) {
+      const erro = new Error("Registro de movimentação não encontrado.");
+      erro.status = 404;
+      throw erro;
     }
+    return rows[0];
   }
 
-  async cadastrar(req, res) {
-    try {
-      const dados = req.body || {};
-
-      if (!req.body || Object.keys(req.body).length === 0) {
-        return res.status(400).json({
-          sucesso: false,
-          mensagem: "Requisição sem corpo. Verifique o JSON enviado.",
-        });
-      }
-
-      const resultado = await MovimentacaoService.cadastrar(dados);
-
-      return res.status(201).json({
-        sucesso: true,
-        mensagem: "Movimentação registrada com sucesso!",
-        dados: resultado,
-      });
-    } catch (erro) {
-      return res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro ao registrar movimentação",
-        erro: erro.stack || erro,
-      });
-    }
+  // Cria movimentação
+  async cadastrar(dados) {
+    const [resultado] = await db.execute(
+      "INSERT INTO movimentacao (id_saida, id_entrada, id_ajuste) VALUES (?, ?, ?)",
+      [dados.id_saida || null, dados.id_entrada || null, dados.id_ajuste || null],
+    );
+    return { id_movimentacao: resultado.insertId, ...dados };
   }
 
-  async atualizar(req, res) {
-    try {
-      const { id } = req.params;
-      const dados = req.body || {};
-
-      const resultado = await MovimentacaoService.atualizar(id, dados);
-
-      return res.status(200).json({
-        sucesso: true,
-        mensagem: "Movimentação atualizada com sucesso!",
-        dados: resultado,
-      });
-    } catch (erro) {
-      return res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro ao atualizar movimentação",
-        erro: erro.stack || erro,
-      });
+  // Atualiza movimentação
+  async atualizar(id, dados) {
+    const [resultado] = await db.execute(
+      "UPDATE movimentacao SET id_saida = ?, id_entrada = ?, id_ajuste = ? WHERE id_movimentacao = ?",
+      [dados.id_saida || null, dados.id_entrada || null, dados.id_ajuste || null, id],
+    );
+    if (!resultado.affectedRows) {
+      const erro = new Error("Registro de movimentação não encontrado para atualização.");
+      erro.status = 404;
+      throw erro;
     }
+    return { id_movimentacao: Number(id), ...dados };
   }
 
-  // Mantido caso precise ser utilizado administrativamente no futuro
-  async deletar(req, res) {
-    try {
-      const { id } = req.params;
-      const resultado = await MovimentacaoService.deletar(id);
-
-      return res.status(200).json({
-        sucesso: true,
-        mensagem: "Movimentação excluída com sucesso!",
-        dados: resultado,
-      });
-    } catch (erro) {
-      return res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro ao excluir movimentação",
-        erro: erro.stack || erro,
-      });
+  // Exclui movimentação
+  async deletar(id) {
+    const [resultado] = await db.execute(
+      "DELETE FROM movimentacao WHERE id_movimentacao = ?",
+      [id],
+    );
+    if (!resultado.affectedRows) {
+      const erro = new Error("Registro de movimentação não encontrado para exclusão.");
+      erro.status = 404;
+      throw erro;
     }
+    return { id_movimentacao: Number(id) };
   }
 }
 
-module.exports = new MovimentacaoController();
+module.exports = new MovimentacaoRepository();

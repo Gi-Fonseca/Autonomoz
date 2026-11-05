@@ -56,3 +56,31 @@ body {
 .text-danger-custom, .text-primary {
     color: #C0001A !important;
 }
+
+.autonomoz-aviso {
+    position: fixed;
+    z-index: 9999;
+    top: 24px;
+    right: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: min(390px, calc(100vw - 32px));
+    padding: 14px 16px;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(31, 41, 55, .18);
+    color: #fff;
+    font-weight: 600;
+    opacity: 0;
+    transform: translateY(-12px);
+    pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+}
+.autonomoz-aviso.visivel { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.autonomoz-aviso-sucesso { background: #16835b; }
+.autonomoz-aviso-erro { background: #C0001A; }
+.autonomoz-aviso-aviso { background: #B96B00; }
+.autonomoz-aviso-info { background: #3F4F68; }
+.autonomoz-aviso-icone { display: grid; flex: 0 0 24px; width: 24px; height: 24px; place-items: center; border: 2px solid currentColor; border-radius: 50%; }
+.autonomoz-aviso-texto { flex: 1; }
+.autonomoz-aviso-fechar { padding: 0 2px; border: 0; background: transparent; color: inherit; font-size: 1.35rem; line-height: 1; cursor: pointer; }

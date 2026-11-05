@@ -1,4 +1,5 @@
 const ProdutoRepository = require("../repositories/ProdutoRepository");
+const CategoriaRepository = require("../repositories/CategoriaRepository");
 
 function numero(valor, nome, minimo = 0) {
   if (
@@ -37,7 +38,7 @@ class ProdutoService {
     const tipo_item = String(dados.tipo_item || "PECA").toUpperCase();
     if (
       !nome ||
-      !dados.id_categoria ||
+      (!dados.id_categoria && !String(dados.categoria || "").trim()) ||
       !dados.id_fornecedor ||
       dados.status === undefined
     ) {
@@ -49,6 +50,66 @@ class ProdutoService {
     if (!["PECA", "VEICULO"].includes(tipo_item)) {
       throw { status: 400, mensagem: "tipo_item deve ser PECA ou VEICULO" };
     }
+    let categoria;
+    if (dados.categoria) {
+      const nomeDigitado = String(dados.categoria).trim();
+      const categorias = await CategoriaRepository.listarCategoria();
+      categoria = categorias.find(
+        (item) =>
+          String(item.tipo_produto).trim().toLowerCase() ===
+          nomeDigitado.toLowerCase(),
+      );
+      if (!categoria) {
+        const nomeNovo = nomeDigitado.toLowerCase();
+        const novoEhVeiculo =
+          nomeNovo.includes("veícul") || nomeNovo.includes("veicul");
+        const novoEhPeca =
+          nomeNovo.includes("peç") ||
+          nomeNovo.includes("peca") ||
+          nomeNovo.includes("reposição") ||
+          nomeNovo.includes("reposicao");
+        if (
+          (tipo_item === "VEICULO" && novoEhPeca) ||
+          (tipo_item === "PECA" && novoEhVeiculo)
+        ) {
+          throw {
+            status: 400,
+            mensagem:
+              "A categoria digitada não corresponde ao tipo escolhido.",
+          };
+        }
+        const idCategoria = await CategoriaRepository.publicarCategoria({
+          tipo_produto: nomeDigitado,
+        });
+        categoria = {
+          id_categoria: idCategoria,
+          tipo_produto: nomeDigitado,
+        };
+      }
+    } else {
+      categoria = await CategoriaRepository.buscarCategoriaId(
+        dados.id_categoria,
+      );
+    }
+    if (!categoria) throw { status: 400, mensagem: "Categoria não encontrada" };
+    const nomeCategoria = String(categoria.tipo_produto || "").toLowerCase();
+    const categoriaVeiculo =
+      nomeCategoria.includes("veícul") || nomeCategoria.includes("veicul");
+    const categoriaPeca =
+      nomeCategoria.includes("peç") ||
+      nomeCategoria.includes("peca") ||
+      nomeCategoria.includes("reposição") ||
+      nomeCategoria.includes("reposicao");
+    if (
+      (categoriaVeiculo && tipo_item !== "VEICULO") ||
+      (categoriaPeca && tipo_item !== "PECA")
+    ) {
+      throw {
+        status: 400,
+        mensagem:
+          "A categoria precisa corresponder ao tipo escolhido: peças com peças e veículos com veículos.",
+      };
+    }
     const novoProduto = {
       nome,
       descricao: dados.descricao ? String(dados.descricao).trim() : null,
@@ -56,7 +117,7 @@ class ProdutoService {
       quantidade: numero(dados.quantidade ?? 0, "Quantidade"),
       estoque_minimo: numero(dados.estoque_minimo ?? 0, "Estoque mínimo"),
       validade: dados.validade || null,
-      id_categoria: Number(dados.id_categoria),
+      id_categoria: Number(categoria.id_categoria),
       id_fornecedor: Number(dados.id_fornecedor),
       status: Boolean(dados.status),
       chassi: dados.chassi ? String(dados.chassi).trim() : null,

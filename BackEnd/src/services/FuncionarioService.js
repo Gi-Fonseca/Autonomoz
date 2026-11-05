@@ -125,7 +125,15 @@ class FuncionarioService {
       dados: { id: Number(id) },
     };
   }
-  async login(email, senha) {
+  async login(email, senha, cargoSelecionado) {
+    const cargoEscolhido = cargos.find(
+      (cargo) =>
+        cargo.toLowerCase() === String(cargoSelecionado || "").trim().toLowerCase(),
+    );
+    if (!cargoEscolhido) {
+      throw { status: 400, mensagem: "Selecione um cargo válido para entrar." };
+    }
+
     const u = await FuncionarioRepository.findByEmail(
       String(email || "")
         .trim()
@@ -133,7 +141,20 @@ class FuncionarioService {
     );
     if (!u || !(await bcrypt.compare(String(senha || ""), u.senha)))
       throw { status: 401, mensagem: "E-mail ou senha inválidos" };
-    const usuario = publico(u);
+
+    const cargoDaConta = cargos.find(
+      (cargo) =>
+        cargo.toLowerCase() === String(u.cargo || "").trim().toLowerCase(),
+    );
+    if (!cargoDaConta || cargoDaConta !== cargoEscolhido) {
+      throw {
+        status: 403,
+        mensagem:
+          "O cargo selecionado não corresponde ao cargo cadastrado para esta conta.",
+      };
+    }
+
+    const usuario = { ...publico(u), cargo: cargoDaConta };
     return {
       sucesso: true,
       mensagem: "Login realizado com sucesso",

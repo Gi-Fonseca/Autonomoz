@@ -22,12 +22,12 @@ async function carregarFornecedores() {
       ? fornecedores
           .map(
             (item) =>
-              `<tr><td class="ps-3 fw-bold text-muted small">${escapar(item.cnpj)}</td><td class="fw-bold">${escapar(item.nome)}</td><td>-</td><td>${escapar(item.telefone)}</td><td>${escapar(item.email)}</td><td class="text-end pe-3"><button class="btn btn-sm btn-outline-danger" onclick="excluirFornecedor(${item.id_fornecedor})">Excluir</button></td></tr>`,
+              `<tr><td class="ps-3 fw-bold text-muted small">${escapar(item.cnpj)}</td><td class="fw-bold">${escapar(item.nome)}</td><td>${escapar(item.telefone)}</td><td>${escapar(item.email)}</td><td class="text-end pe-3"><button class="btn btn-sm btn-outline-danger" onclick="excluirFornecedor(${item.id_fornecedor})">Excluir</button></td></tr>`,
           )
           .join("")
-      : '<tr><td colspan="6" class="text-center py-4 text-muted">Nenhum fornecedor cadastrado.</td></tr>';
+      : '<tr><td colspan="5" class="text-center py-4 text-muted">Nenhum fornecedor cadastrado.</td></tr>';
   } catch (erro) {
-    tabela.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">${escapar(erro.message)}</td></tr>`;
+    tabela.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger">${escapar(erro.message)}</td></tr>`;
   }
 }
 
@@ -86,14 +86,15 @@ async function excluirFornecedor(id) {
   });
   const resultado = await resposta.json();
   if (!resposta.ok || resultado.sucesso === false)
-    return alert(resultado.mensagem || "Não foi possível excluir.");
+    return mostrarAviso(resultado.mensagem || "Não foi possível excluir.");
   carregarFornecedores();
 }
 
 function mostrarMensagemFornecedor(texto, tipo) {
-  const elemento = document.getElementById("mensagem-fornecedor");
-  elemento.textContent = texto;
-  elemento.className = `alert alert-${tipo}`;
+  mostrarAviso(
+    texto,
+    tipo === "success" ? "sucesso" : tipo === "warning" ? "aviso" : "erro",
+  );
 }
 function escapar(valor) {
   return String(valor ?? "").replace(

@@ -4,11 +4,30 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function lerResposta(resposta) {
-  const resultado = await resposta.json();
+  let resultado = await resposta.json();
   if (!resposta.ok || resultado.sucesso === false) {
     throw new Error(resultado.mensagem || "Erro ao consultar a API.");
   }
-  return resultado.dados !== undefined ? resultado.dados : resultado;
+
+  for (let nivel = 0; nivel < 4; nivel += 1) {
+    if (Array.isArray(resultado)) return resultado;
+    if (!resultado || typeof resultado !== "object") return resultado;
+    if (resultado.sucesso === false) {
+      throw new Error(resultado.mensagem || "Erro ao consultar a API.");
+    }
+
+    const proximo = [
+      resultado.dados,
+      resultado.data,
+      resultado.produtos,
+      resultado.movimentacoes,
+      resultado.rows,
+    ].find((valor) => valor !== undefined && valor !== null);
+    if (proximo === undefined) return resultado;
+    resultado = proximo;
+  }
+
+  return resultado;
 }
 
 async function carregarInventario() {
@@ -17,11 +36,18 @@ async function carregarInventario() {
   tbody.innerHTML =
     '<tr><td colspan="9" class="text-center py-4 text-muted"><div class="spinner-border text-danger spinner-border-sm me-2" role="status"></div>Carregando inventário do servidor...</td></tr>';
   try {
-    const resposta = await apiFetch("/produto?limit=5000");
-    if (!resposta) return;
-    const produtos = await lerResposta(resposta);
+    const [respostaProdutos, respostaMovimentacoes] = await Promise.all([
+      apiFetch("/produto?limit=5000"),
+      apiFetch("/movimentacao"),
+    ]);
+    if (!respostaProdutos || !respostaMovimentacoes) return;
+    const produtos = await lerResposta(respostaProdutos);
+    const resultadoMovimentacoes = await lerResposta(respostaMovimentacoes);
     const lista = Array.isArray(produtos) ? produtos : [];
-    atualizarMetricas(lista);
+    const movimentacoes = Array.isArray(resultadoMovimentacoes)
+      ? resultadoMovimentacoes
+      : [];
+    atualizarMetricas(lista, movimentacoes);
     renderizarTabela(lista);
   } catch (erro) {
     console.error("Erro ao carregar inventário:", erro);
@@ -29,7 +55,7 @@ async function carregarInventario() {
   }
 }
 
-function atualizarMetricas(produtos) {
+function atualizarMetricas(produtos, movimentacoes = []) {
   const totalUnidades = produtos.reduce(
     (soma, item) => soma + Number(item.quantidade || 0),
     0,
@@ -41,11 +67,22 @@ function atualizarMetricas(produtos) {
   const estoqueCritico = document.getElementById("estoque-critico");
   const valorEstoque = document.getElementById("valor-estoque");
   const giroInventario = document.getElementById("giro-inventario");
+  const totalSaidas = movimentacoes
+    .filter(
+      (movimentacao) =>
+        String(movimentacao.tipo || "").toUpperCase() === "SAIDA",
+    )
+    .reduce(
+      (total, movimentacao) => total + Number(movimentacao.quantidade || 0),
+      0,
+    );
+  const indiceSaidas = totalUnidades > 0 ? totalSaidas / totalUnidades : 0;
   if (totalItens) totalItens.textContent = produtos.length;
   if (estoqueCritico)
     estoqueCritico.innerHTML = `${criticos} <small class="text-muted fs-6">SKUs</small>`;
   if (valorEstoque) valorEstoque.textContent = `${totalUnidades} unidades`;
-  if (giroInventario) giroInventario.textContent = "Não calculado";
+  if (giroInventario)
+    giroInventario.textContent = `${indiceSaidas.toFixed(1).replace(".", ",")}x`;
 }
 
 function renderizarTabela(produtos) {
@@ -217,15 +254,25 @@ async function confirmarMovimentacao() {
   const produtoId = document.getElementById("mov-produto-id").value;
   const tipo = document.getElementById("mov-tipo").value;
   const quantidade = Number(document.getElementById("mov-qtd").value);
-  const observacao = document.getElementById("mov-obs").value.trim();
+  const campoMotivo = document.getElementById("mov-obs");
+  const observacao = campoMotivo.value.trim();
   if (!quantidade || quantidade <= 0)
-    return alert("Informe uma quantidade válida.");
+    return mostrarAviso("Informe uma quantidade válida.", "aviso");
+  if (!observacao) {
+    mostrarAviso("O motivo da movimentação é obrigatório.", "aviso");
+    campoMotivo.focus();
+    return;
+  }
+  if (observacao.length > 255) {
+    mostrarAviso("O motivo deve ter no máximo 255 caracteres.", "aviso");
+    campoMotivo.focus();
+    return;
+  }
   const payload = {
     id_produto: Number(produtoId),
     quantidade,
-    motivo_ajuste: observacao || "Ajuste manual",
-    motivo_saida: observacao || "Saída manual",
-    fornecedor: observacao || "Movimentação manual",
+    motivo_ajuste: observacao,
+    motivo_saida: observacao,
     valor_compra: 0,
   };
   const rota = { ENTRADA: "/entrada", SAIDA: "/saida", AJUSTE: "/ajuste" }[
@@ -242,14 +289,14 @@ async function confirmarMovimentacao() {
       throw new Error(
         resultado.mensagem || "Não foi possível registrar a movimentação.",
       );
-    alert("Movimentação registrada com sucesso.");
+    mostrarAviso("Movimentação registrada com sucesso.", "sucesso");
     bootstrap.Modal.getInstance(
       document.getElementById("modalMovimentacao"),
     )?.hide();
     carregarInventario();
   } catch (erro) {
     console.error("Erro ao registrar movimentação:", erro);
-    alert(`Erro ao registrar movimentação: ${erro.message}`);
+    mostrarAviso(`Erro ao registrar movimentação: ${erro.message}`);
   }
 }
 
