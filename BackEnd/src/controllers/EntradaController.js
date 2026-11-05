@@ -10,7 +10,7 @@ class EntradaController {
       const dadosEntrada = {
         ...(req.body || {}),
         id_funcionario: req.usuario.id,
-        data_entrada: req.body?.data_entrada || new Date().toISOString().slice(0, 10),
+        data_entrada: req.body?.data_entrada || new Date(),
         valor_compra: req.body?.valor_compra ?? 0,
         fornecedor: req.body?.fornecedor || "Movimentação manual",
       };

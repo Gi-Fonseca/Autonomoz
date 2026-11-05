@@ -68,13 +68,17 @@ function renderizarTabela(produtos) {
       String(produto.tipo_item || "").toUpperCase() === "VEICULO"
         ? '<span class="badge bg-primary text-white">VEÍCULO</span>'
         : '<span class="badge bg-secondary text-white">PEÇA</span>';
+    const alertaEstoque =
+      String(produto.tipo_item || "").toUpperCase() === "PECA" &&
+      Number(produto.quantidade || 0) < 3;
+    const classeNome = alertaEstoque ? "text-danger" : "text-dark";
     const foto = produto.foto
       ? `<img src="/uploads/${encodeURIComponent(produto.foto)}" alt="Foto de ${escaparHtml(produto.nome)}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;">`
       : '<span class="text-muted small">Sem foto</span>';
     tbody.innerHTML += `<tr>
       <td class="ps-3">${foto}</td>
       <td class="fw-bold text-muted small">AMZ-${id}</td>
-      <td><a href="produto-detalhes.html?id=${encodeURIComponent(id)}" class="fw-bold text-dark text-decoration-none">${escaparHtml(produto.nome || "-")}</a></td>
+      <td><button type="button" class="btn btn-link p-0 fw-bold ${classeNome} text-decoration-none" onclick="mostrarDetalhesProduto(${id})">${escaparHtml(produto.nome || "-")}</button></td>
       <td>${categoria}</td>
       <td class="fw-semibold text-secondary">${escaparHtml(produto.fornecedor_nome || "-")}</td>
       <td class="small text-muted">${escaparHtml(produto.descricao || produto.placa || "-")}</td>
@@ -143,6 +147,48 @@ function abrirDetalhesProduto(id) {
       .querySelectorAll("[data-bs-dismiss='modal'], .btn-close")
       .forEach((botao) => (botao.onclick = fechar));
   }
+}
+
+function mostrarDetalhesProduto(id) {
+  const produto = (window.produtosInventario || []).find(
+    (item) => Number(item.id_produto ?? item.id) === Number(id),
+  );
+  const painel = document.getElementById("detalhe-produto-inline");
+  if (!produto || !painel) return;
+  const preencher = (idElemento, valor) => {
+    const elemento = document.getElementById(idElemento);
+    if (elemento) elemento.textContent = valor ?? "-";
+  };
+  const foto = document.getElementById("inline-produto-foto");
+  if (foto)
+    foto.innerHTML = produto.foto
+      ? `<img src="/uploads/${encodeURIComponent(produto.foto)}" alt="Foto de ${escaparHtml(produto.nome)}" style="max-width:100%;max-height:180px;object-fit:contain;border-radius:10px;">`
+      : "Sem foto cadastrada";
+  preencher("inline-produto-nome", produto.nome);
+  preencher(
+    "inline-produto-descricao",
+    produto.descricao || "Sem descrição cadastrada.",
+  );
+  preencher(
+    "inline-produto-tipo",
+    String(produto.tipo_item || "PECA").toUpperCase() === "VEICULO"
+      ? "Veículo"
+      : "Peça",
+  );
+  preencher("inline-produto-categoria", produto.tipo_produto || "-");
+  preencher("inline-produto-fornecedor", produto.fornecedor_nome || "-");
+  preencher("inline-produto-quantidade", produto.quantidade ?? 0);
+  preencher("inline-produto-minimo", produto.estoque_minimo ?? 0);
+  preencher("inline-produto-status", produto.status ? "Ativo" : "Inativo");
+  preencher("inline-produto-placa", produto.placa || "-");
+  preencher("inline-produto-chassi", produto.chassi || "-");
+  preencher("inline-produto-ano", produto.ano || "-");
+  painel.classList.remove("d-none");
+  painel.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function fecharDetalhesProduto() {
+  document.getElementById("detalhe-produto-inline")?.classList.add("d-none");
 }
 
 function escaparTexto(valor) {

@@ -15,7 +15,7 @@ class RelatorioRepository {
     const [resumo] = await pool.query(`
       SELECT COUNT(*) AS total_itens,
              COALESCE(SUM(quantidade), 0) AS total_unidades,
-             COALESCE(SUM(CASE WHEN quantidade <= estoque_minimo THEN 1 ELSE 0 END), 0) AS total_alertas,
+             COALESCE(SUM(CASE WHEN tipo_item = 'PECA' AND quantidade < 3 THEN 1 ELSE 0 END), 0) AS total_alertas,
              COALESCE(SUM(CASE WHEN tipo_item = 'VEICULO' THEN 1 ELSE 0 END), 0) AS total_veiculos,
              COALESCE(SUM(CASE WHEN tipo_item = 'PECA' THEN 1 ELSE 0 END), 0) AS total_pecas
       FROM produtos

@@ -13,13 +13,33 @@ class FornecedorService {
     return item;
   }
   async criar(dados) {
-    if (!dados || !dados.nome || !dados.cnpj || !dados.telefone || !dados.email)
+    const fornecedor = {
+      nome: String(dados?.nome || "").trim(),
+      cnpj: String(dados?.cnpj || "").replace(/\D/g, ""),
+      telefone: String(dados?.telefone || "").replace(/\D/g, ""),
+      email: String(dados?.email || "")
+        .trim()
+        .toLowerCase(),
+    };
+    if (
+      !fornecedor.nome ||
+      !fornecedor.cnpj ||
+      !fornecedor.telefone ||
+      !fornecedor.email
+    )
       throw {
         status: 400,
         mensagem: "Nome, CNPJ, telefone e email são obrigatórios",
       };
-    const id = await FornecedorRepository.criar(dados);
-    return { id_fornecedor: id, ...dados };
+    if (fornecedor.cnpj.length < 11 || fornecedor.cnpj.length > 14)
+      throw { status: 400, mensagem: "CNPJ deve conter entre 11 e 14 números" };
+    if (fornecedor.telefone.length < 10 || fornecedor.telefone.length > 13)
+      throw {
+        status: 400,
+        mensagem: "Telefone deve conter entre 10 e 13 números",
+      };
+    const id = await FornecedorRepository.criar(fornecedor);
+    return { id_fornecedor: id, ...fornecedor };
   }
   async atualizar(id, dados) {
     validarId(id);

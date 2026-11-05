@@ -114,8 +114,55 @@
                     </table>
                 </div>
             </div>
+
+            <section id="detalhe-produto-inline" class="card border-0 shadow-sm rounded-3 p-4 mt-4 d-none">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div><h5 class="fw-bold mb-1">Detalhes do produto</h5><p class="text-muted small mb-0">Informações reais do cadastro selecionado.</p></div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="fecharDetalhesProduto()">Fechar detalhes</button>
+                </div>
+                <div class="row g-4">
+                    <div class="col-md-3"><div id="inline-produto-foto" class="bg-light rounded-3 d-flex align-items-center justify-content-center" style="min-height:180px;">Sem foto</div></div>
+                    <div class="col-md-9"><h4 id="inline-produto-nome" class="fw-bold">-</h4><p id="inline-produto-descricao" class="text-muted">-</p><div class="row g-2 small"><div class="col-sm-4"><strong>Tipo:</strong> <span id="inline-produto-tipo">-</span></div><div class="col-sm-4"><strong>Categoria:</strong> <span id="inline-produto-categoria">-</span></div><div class="col-sm-4"><strong>Fornecedor:</strong> <span id="inline-produto-fornecedor">-</span></div><div class="col-sm-4"><strong>Quantidade:</strong> <span id="inline-produto-quantidade">-</span></div><div class="col-sm-4"><strong>Estoque mínimo:</strong> <span id="inline-produto-minimo">-</span></div><div class="col-sm-4"><strong>Status:</strong> <span id="inline-produto-status">-</span></div><div class="col-sm-4"><strong>Placa:</strong> <span id="inline-produto-placa">-</span></div><div class="col-sm-4"><strong>Chassi:</strong> <span id="inline-produto-chassi">-</span></div><div class="col-sm-4"><strong>Ano:</strong> <span id="inline-produto-ano">-</span></div></div></div>
+                </div>
+            </section>
         </div>
     </main>
+</div>
+
+<!-- MODAL DE DETALHES DO PRODUTO -->
+<div class="modal fade" id="modalDetalhesProduto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Detalhes do produto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <div class="col-md-4 text-center">
+                        <div id="detalhe-foto" class="d-flex align-items-center justify-content-center bg-light rounded-3" style="min-height:220px;">Sem foto</div>
+                    </div>
+                    <div class="col-md-8">
+                        <h4 id="detalhe-nome" class="fw-bold mb-1">-</h4>
+                        <p id="detalhe-sku" class="text-muted small mb-3">-</p>
+                        <p id="detalhe-descricao" class="mb-3">-</p>
+                        <div class="row g-3 small">
+                            <div class="col-sm-6"><strong>Tipo:</strong> <span id="detalhe-tipo">-</span></div>
+                            <div class="col-sm-6"><strong>Categoria:</strong> <span id="detalhe-categoria">-</span></div>
+                            <div class="col-sm-6"><strong>Fornecedor:</strong> <span id="detalhe-fornecedor">-</span></div>
+                            <div class="col-sm-6"><strong>Quantidade:</strong> <span id="detalhe-quantidade">-</span></div>
+                            <div class="col-sm-6"><strong>Estoque mínimo:</strong> <span id="detalhe-minimo">-</span></div>
+                            <div class="col-sm-6"><strong>Status:</strong> <span id="detalhe-status">-</span></div>
+                            <div class="col-sm-6"><strong>Placa:</strong> <span id="detalhe-placa">-</span></div>
+                            <div class="col-sm-6"><strong>Chassi:</strong> <span id="detalhe-chassi">-</span></div>
+                            <div class="col-sm-6"><strong>Ano:</strong> <span id="detalhe-ano">-</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button></div>
+        </div>
+    </div>
 </div>
 
 <!-- MODAL DE MOVIMENTAÇÃO RÁPIDA (Entrada / Saída / Ajuste) -->

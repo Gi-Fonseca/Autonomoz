@@ -73,7 +73,19 @@ function formatarData(dataIso) {
   if (!dataIso) return "-";
 
   try {
-    return new Date(dataIso).toLocaleDateString("pt-BR", {
+    let data;
+    if (typeof dataIso === "string") {
+      const mysql = dataIso.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+      if (mysql) {
+        data = new Date(Number(mysql[1]), Number(mysql[2]) - 1, Number(mysql[3]), Number(mysql[4] || 0), Number(mysql[5] || 0), Number(mysql[6] || 0));
+      } else {
+        data = new Date(dataIso);
+      }
+    } else {
+      data = new Date(dataIso);
+    }
+    if (Number.isNaN(data.getTime())) return String(dataIso);
+    return data.toLocaleString("pt-BR", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",

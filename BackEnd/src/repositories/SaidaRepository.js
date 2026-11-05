@@ -56,7 +56,7 @@ class SaidaRepository {
         id_funcionario,
         dados.id_cliente || null,
         quantidade,
-        dados.data_saida || new Date().toISOString().slice(0, 10),
+        dados.data_saida || new Date(),
         motivo_saida,
         valor_venda || null,
         nf || null,
@@ -68,15 +68,9 @@ class SaidaRepository {
                 SET quantidade = quantidade - ?
                 WHERE id_produto = ? AND quantidade >= ?
             `;
-      const [estoqueAtualizado] = await connection.execute(queryEstoque, [
-        quantidade,
-        id_produto,
-        quantidade,
-      ]);
+      const [estoqueAtualizado] = await connection.execute(queryEstoque, [quantidade, id_produto, quantidade]);
       if (!estoqueAtualizado.affectedRows) {
-        const erro = new Error(
-          "Estoque insuficiente ou produto não encontrado.",
-        );
+        const erro = new Error("Estoque insuficiente ou produto não encontrado.");
         erro.status = 409;
         throw erro;
       }
@@ -137,7 +131,7 @@ class SaidaRepository {
         id_funcionario,
         dados.id_cliente || null,
         quantidade,
-        dados.data_saida || new Date().toISOString().slice(0, 10),
+        dados.data_saida || new Date(),
         motivo_saida,
         valor_venda || null,
         nf || null,

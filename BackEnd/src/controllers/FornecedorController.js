@@ -1,54 +1,44 @@
 const FornecedorService = require("../services/FornecedorService");
 
 class FornecedorController {
-  // Lista fornecedores
   async listar(req, res) {
     try {
-      res.json(await FornecedorService.listar());
+      return res.json({ sucesso: true, dados: await FornecedorService.listar() });
     } catch (erro) {
-      res.status(500).json({ mensagem: erro.message || erro.mensagem });
+      return res.status(erro.status || 500).json({ sucesso: false, mensagem: erro.sqlMessage || erro.message || erro.mensagem || "Erro ao listar fornecedores" });
     }
   }
 
-  // Busca fornecedor
   async buscarPorId(req, res) {
     try {
-      res.json(await FornecedorService.buscarPorId(req.params.id));
+      return res.json({ sucesso: true, dados: await FornecedorService.buscarPorId(req.params.id) });
     } catch (erro) {
-      res.status(500).json({ mensagem: erro.message || erro.mensagem });
+      return res.status(erro.status || 500).json({ sucesso: false, mensagem: erro.sqlMessage || erro.message || erro.mensagem || "Erro ao buscar fornecedor" });
     }
   }
 
-  // Cria fornecedor
   async criar(req, res) {
     try {
-      res.status(201).json(await FornecedorService.criar(req.body));
+      const dados = await FornecedorService.criar(req.body || {});
+      return res.status(201).json({ sucesso: true, mensagem: "Fornecedor cadastrado com sucesso", dados });
     } catch (erro) {
-      res
-        .status(erro.status || 500)
-        .json({ mensagem: erro.message || erro.mensagem });
+      return res.status(erro.status || 500).json({ sucesso: false, mensagem: erro.sqlMessage || erro.message || erro.mensagem || "Erro ao cadastrar fornecedor" });
     }
   }
 
-  // Atualiza fornecedor
   async atualizar(req, res) {
     try {
-      res.json(await FornecedorService.atualizar(req.params.id, req.body));
+      return res.json({ sucesso: true, dados: await FornecedorService.atualizar(req.params.id, req.body || {}) });
     } catch (erro) {
-      res
-        .status(erro.status || 500)
-        .json({ mensagem: erro.message || erro.mensagem });
+      return res.status(erro.status || 500).json({ sucesso: false, mensagem: erro.sqlMessage || erro.message || erro.mensagem || "Erro ao atualizar fornecedor" });
     }
   }
 
-  // Exclui fornecedor
   async excluir(req, res) {
     try {
-      res.json(await FornecedorService.excluir(req.params.id));
+      return res.json({ sucesso: true, dados: await FornecedorService.excluir(req.params.id) });
     } catch (erro) {
-      res
-        .status(erro.status || 500)
-        .json({ mensagem: erro.message || erro.mensagem });
+      return res.status(erro.status || 500).json({ sucesso: false, mensagem: erro.sqlMessage || erro.message || erro.mensagem || "Erro ao excluir fornecedor" });
     }
   }
 }

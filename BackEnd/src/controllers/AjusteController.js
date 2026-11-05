@@ -34,7 +34,7 @@ class AjusteController {
       const dadosAjuste = {
         ...(req.body || {}),
         id_funcionario: req.usuario.id,
-        data_ajuste: req.body?.data_ajuste || new Date().toISOString().slice(0, 10),
+        data_ajuste: req.body?.data_ajuste || new Date(),
       };
 
       if (!req.body || Object.keys(req.body).length === 0) {

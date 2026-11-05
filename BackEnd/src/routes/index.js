@@ -18,7 +18,7 @@ router.use("/cliente", require("./clienteRoutes"));
 router.use("/fornecedor", require("./fornecedorRoutes"));
 router.use("/ajuste", require("./ajusteRoutes"));
 router.use("/lote", require("./loteRoutes"));
-router.use("/relatorios", autorizar("Gerente"), require("./relatorioRoutes"));
+router.use("/relatorios", autorizar("Gerente", "GERENTE"), require("./relatorioRoutes"));
 
 
 module.exports = router;

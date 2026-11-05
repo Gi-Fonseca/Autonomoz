@@ -1,4 +1,3 @@
-
 CREATE DATABASE IF NOT EXISTS autonomoz_db;
 USE autonomoz_db;
 
@@ -78,6 +77,10 @@ BEGIN
     ) THEN
         ALTER TABLE ajuste_produto ADD COLUMN quantidade INT NOT NULL DEFAULT 0 AFTER id_funcionario;
     END IF;
+
+    ALTER TABLE entrada_produto MODIFY data_entrada DATETIME NOT NULL;
+    ALTER TABLE saida_produto MODIFY data_saida DATETIME NOT NULL;
+    ALTER TABLE ajuste_produto MODIFY data_ajuste DATETIME NOT NULL;
 END$$
 DELIMITER ;
 
@@ -129,3 +132,11 @@ SELECT 'Gerente', 'Administrador', '11111111111', 'admin@autonomoz.com',
 WHERE NOT EXISTS (
     SELECT 1 FROM funcionario WHERE email = 'admin@autonomoz.com'
 );
+ALTER TABLE entrada_produto
+MODIFY data_entrada DATETIME NOT NULL;
+
+ALTER TABLE saida_produto
+MODIFY data_saida DATETIME NOT NULL;
+
+ALTER TABLE ajuste_produto
+MODIFY data_ajuste DATETIME NOT NULL;
