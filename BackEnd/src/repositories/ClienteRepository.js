@@ -1,58 +1,47 @@
-const pool = require("../config/database.js");
+const pool = require("../config/database");
 const { traduzirErroBanco } = require("../utils/databaseError");
 
-class CategoriaRepository {
-  // Lista categorias
-  async listarCategoria() {
-    const [rows] = await pool.query("SELECT * FROM categoria");
-
+class ClienteRepository {
+  async listar() {
+    const [rows] = await pool.query("SELECT id_cliente, nome, email, cadastro FROM cliente ORDER BY id_cliente DESC");
     return rows;
   }
 
-  // Busca categoria
-  async buscarCategoriaId(id) {
-    const [rows] = await pool.query(
-      "SELECT * FROM categoria WHERE id_categoria = ?",
-      [id],
-    );
-
+  async buscarPorId(id) {
+    const [rows] = await pool.query("SELECT id_cliente, nome, email, cadastro FROM cliente WHERE id_cliente = ?", [id]);
     return rows[0];
   }
 
-  // Cria categoria
-  async publicarCategoria(dadosCategoria) {
-    const { tipo_produto } = dadosCategoria;
-
+  async criar(dados) {
     const [resultado] = await pool.query(
-      "INSERT INTO categoria (tipo_produto) VALUES (?)",
-      [tipo_produto],
+      "INSERT INTO cliente (nome, email, cadastro) VALUES (?, ?, ?)",
+      [dados.nome, dados.email, dados.cadastro || null],
     );
-
     return resultado.insertId;
   }
 
-  // Atualiza categoria
-  async alterarDadosId(id, dadosCategoria) {
-    const { tipo_produto } = dadosCategoria;
-
+  async atualizar(id, dados) {
+    const permitidos = ["nome", "email", "cadastro"];
+    const campos = [];
+    const valores = [];
+    for (const campo of permitidos) {
+      if (dados[campo] !== undefined) {
+        campos.push(`${campo} = ?`);
+        valores.push(dados[campo]);
+      }
+    }
+    if (!campos.length) return 0;
+    valores.push(id);
     const [resultado] = await pool.query(
-      `UPDATE categoria
-             SET tipo_produto = ?
-             WHERE id_categoria = ?`,
-      [tipo_produto, id],
+      `UPDATE cliente SET ${campos.join(", ")} WHERE id_cliente = ?`,
+      valores,
     );
-
     return resultado.affectedRows;
   }
 
-  // Exclui categoria
-  async deletarCategoria(id) {
+  async excluir(id) {
     try {
-      const [resultado] = await pool.query(
-        "DELETE FROM categoria WHERE id_categoria = ?",
-        [id],
-      );
-
+      const [resultado] = await pool.query("DELETE FROM cliente WHERE id_cliente = ?", [id]);
       return resultado.affectedRows;
     } catch (erro) {
       throw traduzirErroBanco(erro);
@@ -60,4 +49,4 @@ class CategoriaRepository {
   }
 }
 
-module.exports = new CategoriaRepository();
+module.exports = new ClienteRepository();

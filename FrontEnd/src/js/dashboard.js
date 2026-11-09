@@ -1,40 +1,44 @@
 document.addEventListener("DOMContentLoaded", async () => {
   verificarAutenticacao();
   try {
-    const [resposta, respostaVeiculos, respostaMovimentacoes] =
-      await Promise.all([
+    const [resultadoProdutos, resultadoVeiculos, resultadoHistorico] =
+      await Promise.allSettled([
         fetchAutenticado("/produto?limit=5000"),
         fetchAutenticado("/produto?tipo_item=VEICULO&limit=5000"),
         fetchAutenticado("/movimentacao"),
       ]);
-    if (!resposta || !respostaVeiculos || !respostaMovimentacoes) return;
+    if (resultadoProdutos.status !== "fulfilled" || !resultadoProdutos.value)
+      throw resultadoProdutos.reason || new Error("Erro ao carregar produtos");
+    if (resultadoVeiculos.status !== "fulfilled" || !resultadoVeiculos.value)
+      throw resultadoVeiculos.reason || new Error("Erro ao carregar veículos");
+    const resposta = resultadoProdutos.value;
+    const respostaVeiculos = resultadoVeiculos.value;
     const resultado = await resposta.json();
-    const resultadoVeiculos = await respostaVeiculos.json();
-    const resultadoMovimentacoes = await respostaMovimentacoes.json();
+    const dadosVeiculos = await respostaVeiculos.json();
     if (!resposta.ok || resultado.sucesso === false)
       throw new Error(resultado.mensagem || "Erro ao carregar produtos");
-    if (!respostaVeiculos.ok || resultadoVeiculos.sucesso === false)
-      throw new Error(
-        resultadoVeiculos.mensagem || "Erro ao carregar veículos",
-      );
-    if (!respostaMovimentacoes.ok || resultadoMovimentacoes.sucesso === false)
-      throw new Error(
-        resultadoMovimentacoes.mensagem || "Erro ao carregar movimentações",
-      );
+    if (!respostaVeiculos.ok || dadosVeiculos.sucesso === false)
+      throw new Error(dadosVeiculos.mensagem || "Erro ao carregar veículos");
 
     const produtos = Array.isArray(resultado.dados) ? resultado.dados : [];
     const ativos = produtos.filter((produto) => Boolean(produto.status));
-    const veiculos = Array.isArray(resultadoVeiculos.dados)
-      ? resultadoVeiculos.dados.filter((produto) => Boolean(produto.status))
+    const veiculos = Array.isArray(dadosVeiculos.dados)
+      ? dadosVeiculos.dados.filter((produto) => Boolean(produto.status))
       : [];
     const alertas = ativos.filter(
       (produto) =>
         String(produto.tipo_item || "").toUpperCase() === "PECA" &&
         Number(produto.quantidade || 0) < 3,
     );
-    const movimentacoes = Array.isArray(resultadoMovimentacoes.dados)
-      ? resultadoMovimentacoes.dados
-      : resultadoMovimentacoes.dados?.dados || [];
+    let movimentacoes = [];
+    if (resultadoHistorico.status === "fulfilled" && resultadoHistorico.value) {
+      const dadosHistorico = await resultadoHistorico.value.json();
+      if (resultadoHistorico.value.ok && dadosHistorico.sucesso !== false) {
+        movimentacoes = Array.isArray(dadosHistorico.dados)
+          ? dadosHistorico.dados
+          : [];
+      }
+    }
     const totalEstoque = produtos.reduce(
       (total, produto) => total + Number(produto.quantidade || 0),
       0,

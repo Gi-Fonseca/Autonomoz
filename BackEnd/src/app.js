@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const routes = require("./routes");
+const pool = require("./config/database");
 const swaggerUi = require("swagger-ui-express");
 const swaggerFile = require("./swagger_output.json");
 
@@ -20,6 +21,13 @@ app.use(
       // Permite chamadas sem cabeçalho Origin, como o próprio frontend,
       // Postman e curl.
       if (!origin) {
+        return callback(null, true);
+      }
+
+      // Navegadores enviam Origin: null quando o HTML é aberto diretamente
+      // via file://. Isso é útil no desenvolvimento local, mas não deve ser
+      // permitido em produção.
+      if (origin === "null" && process.env.NODE_ENV !== "production") {
         return callback(null, true);
       }
 
@@ -44,6 +52,21 @@ app.use(express.static(path.join(__dirname, "../../FrontEnd")));
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerFile));
+
+app.get("/health", async (req, res) => {
+  try {
+    await pool.query("SELECT 1 AS ok");
+    return res.json({ status: "ok", banco: "conectado" });
+  } catch (erro) {
+    console.error("[HEALTH] Banco indisponível:", erro);
+    return res.status(503).json({
+      status: "erro",
+      banco: "indisponível",
+      mensagem:
+        "Não foi possível conectar ao MySQL. Verifique o serviço e as configurações do banco.",
+    });
+  }
+});
 
 // Contrato único: sucesso, mensagem e dados.
 // Nunca expõe stack ou erro interno na resposta ao cliente.

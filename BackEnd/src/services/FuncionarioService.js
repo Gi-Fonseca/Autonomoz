@@ -1,4 +1,5 @@
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const { gerarToken } = require("../middlewares/auth");
 const FuncionarioRepository = require("../repositories/FuncionarioRepository");
 const cargos = ["Estoquista", "Gerente"];
@@ -160,6 +161,52 @@ class FuncionarioService {
       mensagem: "Login realizado com sucesso",
       dados: { token: gerarToken(usuario), usuario },
     };
+  }
+
+  async solicitarReset(email) {
+    const emailNormalizado = String(email || "").trim().toLowerCase();
+    const usuario = await FuncionarioRepository.findByEmail(emailNormalizado);
+    const resposta = {
+      sucesso: true,
+      mensagem: "Se o e-mail estiver cadastrado, um código de recuperação foi gerado.",
+    };
+
+    // Não revela se o e-mail existe. Em desenvolvimento o código é devolvido
+    // para permitir testes locais; em produção ele deve ser enviado por e-mail.
+    if (!usuario) return resposta;
+
+    const codigo = String(crypto.randomInt(100000, 1000000));
+    const codigoHash = crypto.createHash("sha256").update(codigo).digest("hex");
+    const expiraEm = new Date(Date.now() + 15 * 60 * 1000);
+    await FuncionarioRepository.criarCodigoReset(usuario.id, codigoHash, expiraEm);
+
+    if (process.env.NODE_ENV !== "production") {
+      resposta.dados = { codigo, expiraEm };
+      console.log(`[RESET] Código de recuperação para ${emailNormalizado}: ${codigo}`);
+    } else {
+      // Integração SMTP pode consumir este evento sem alterar o fluxo da API.
+      console.log(`[RESET] Código criado para ${emailNormalizado}; configure o envio de e-mail em produção.`);
+    }
+    return resposta;
+  }
+
+  async resetarSenha(email, codigo, novaSenha) {
+    const emailNormalizado = String(email || "").trim().toLowerCase();
+    if (!/^\d{6}$/.test(String(codigo || "")))
+      throw { status: 400, mensagem: "Informe o código de recuperação de 6 dígitos." };
+    if (String(novaSenha || "").length < 8)
+      throw { status: 400, mensagem: "A nova senha deve ter no mínimo 8 caracteres." };
+
+    const codigoHash = crypto.createHash("sha256").update(String(codigo)).digest("hex");
+    const reset = await FuncionarioRepository.buscarCodigoReset(codigoHash);
+    if (!reset || reset.email !== emailNormalizado || new Date(reset.expira_em) < new Date())
+      throw { status: 400, mensagem: "Código inválido ou expirado. Solicite um novo código." };
+
+    await FuncionarioRepository.update(reset.id_funcionario, {
+      senha: await bcrypt.hash(String(novaSenha), 12),
+    });
+    await FuncionarioRepository.excluirCodigoReset(reset.id);
+    return { sucesso: true, mensagem: "Senha redefinida com sucesso. Faça login novamente." };
   }
 }
 module.exports = new FuncionarioService();

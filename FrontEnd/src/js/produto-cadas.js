@@ -19,13 +19,17 @@ async function lerDadosResposta(resposta) {
 
 async function carregarSelects() {
   try {
-    const [respostaCategorias, respostaFornecedores] = await Promise.all([
-      fetchAutenticado("/categoria"),
-      fetchAutenticado("/fornecedor"),
-    ]);
+    const [resultadoCategorias, resultadoFornecedores] =
+      await Promise.allSettled([
+        fetchAutenticado("/categoria"),
+        fetchAutenticado("/fornecedor"),
+      ]);
 
-    if (respostaCategorias) {
-      const categorias = await lerDadosResposta(respostaCategorias);
+    if (
+      resultadoCategorias.status === "fulfilled" &&
+      resultadoCategorias.value
+    ) {
+      const categorias = await lerDadosResposta(resultadoCategorias.value);
       const selectCategoria = document.getElementById("prod-categoria");
 
       if (selectCategoria && Array.isArray(categorias)) {
@@ -34,17 +38,22 @@ async function carregarSelects() {
       }
     }
 
-    if (respostaFornecedores) {
-      const fornecedores = await lerDadosResposta(respostaFornecedores);
+    if (
+      resultadoFornecedores.status === "fulfilled" &&
+      resultadoFornecedores.value
+    ) {
+      const fornecedores = await lerDadosResposta(resultadoFornecedores.value);
       const selectFornecedor = document.getElementById("prod-fornecedor");
 
       if (selectFornecedor && Array.isArray(fornecedores)) {
-        selectFornecedor.innerHTML = fornecedores
-          .map(
-            (fornecedor) =>
-              `<option value="${fornecedor.id_fornecedor}">${fornecedor.nome}</option>`,
-          )
-          .join("");
+        selectFornecedor.innerHTML =
+          '<option value="">Selecione um fornecedor</option>' +
+          fornecedores
+            .map(
+              (fornecedor) =>
+                `<option value="${fornecedor.id_fornecedor}">${fornecedor.nome}</option>`,
+            )
+            .join("");
       }
     }
   } catch (erro) {
@@ -54,8 +63,14 @@ async function carregarSelects() {
 
 function categoriaPertenceAoTipo(categoria, tipo) {
   const nome = String(categoria?.tipo_produto || "").toLowerCase();
-  if (tipo === "VEICULO") return nome.includes("veícul") || nome.includes("veicul");
-  return nome.includes("peç") || nome.includes("peca") || nome.includes("reposição") || nome.includes("reposicao");
+  if (tipo === "VEICULO")
+    return nome.includes("veícul") || nome.includes("veicul");
+  return (
+    nome.includes("peç") ||
+    nome.includes("peca") ||
+    nome.includes("reposição") ||
+    nome.includes("reposicao")
+  );
 }
 
 function atualizarCategoriasPorTipo() {
@@ -64,6 +79,7 @@ function atualizarCategoriasPorTipo() {
   if (!selectTipo || !listaCategorias) return;
 
   listaCategorias.innerHTML = categoriasDisponiveis
+    .filter((categoria) => categoriaPertenceAoTipo(categoria, selectTipo.value))
     .map(
       (categoria) =>
         `<option value="${escaparHtml(categoria.tipo_produto)}"></option>`,

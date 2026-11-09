@@ -84,6 +84,7 @@ async function excluirFornecedor(id) {
   const resposta = await fetchAutenticado(`/fornecedor/${id}`, {
     method: "DELETE",
   });
+  if (!resposta) return;
   const resultado = await resposta.json();
   if (!resposta.ok || resultado.sucesso === false)
     return mostrarAviso(resultado.mensagem || "Não foi possível excluir.");

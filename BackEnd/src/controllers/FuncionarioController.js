@@ -22,10 +22,42 @@ class FuncionarioController {
 
       return res.json(await FuncionarioService.login(email, senha, cargo));
     } catch (erro) {
+      console.error("[LOGIN] Falha ao consultar autenticação:", erro);
+      let mensagem = erro.mensagem || "Erro ao realizar login";
+
+      if (["ECONNREFUSED", "PROTOCOL_CONNECTION_LOST", "ETIMEDOUT"].includes(erro.code)) {
+        mensagem = "Banco de dados indisponível. Verifique se o MySQL está iniciado.";
+      } else if (["ER_NO_SUCH_TABLE", "ER_BAD_FIELD_ERROR"].includes(erro.code)) {
+        mensagem = "Banco de dados desatualizado. Execute o arquivo database.sql novamente.";
+      } else if (erro.code === "ER_ACCESS_DENIED_ERROR") {
+        mensagem = "Acesso ao banco de dados negado. Verifique DB_USER e DB_PASSWORD.";
+      } else if (erro.code === "ER_BAD_DB_ERROR") {
+        mensagem = "O banco autonomoz_db não existe. Execute o database.sql.";
+      }
+
       return res.status(erro.status || 500).json({
         sucesso: false,
-        mensagem: erro.mensagem || "Erro ao realizar login",
+        mensagem,
       });
+    }
+  }
+
+  async solicitarReset(req, res) {
+    try {
+      const { email } = req.body || {};
+      if (!email) return res.status(400).json({ sucesso: false, mensagem: "Informe o e-mail cadastrado." });
+      return res.json(await FuncionarioService.solicitarReset(email));
+    } catch (erro) {
+      return res.status(erro.status || 500).json({ sucesso: false, mensagem: erro.mensagem || "Não foi possível solicitar a recuperação." });
+    }
+  }
+
+  async resetarSenha(req, res) {
+    try {
+      const { email, codigo, novaSenha } = req.body || {};
+      return res.json(await FuncionarioService.resetarSenha(email, codigo, novaSenha));
+    } catch (erro) {
+      return res.status(erro.status || 500).json({ sucesso: false, mensagem: erro.mensagem || "Não foi possível redefinir a senha." });
     }
   }
 

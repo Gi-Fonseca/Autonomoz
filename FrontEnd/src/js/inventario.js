@@ -36,17 +36,25 @@ async function carregarInventario() {
   tbody.innerHTML =
     '<tr><td colspan="9" class="text-center py-4 text-muted"><div class="spinner-border text-danger spinner-border-sm me-2" role="status"></div>Carregando inventário do servidor...</td></tr>';
   try {
-    const [respostaProdutos, respostaMovimentacoes] = await Promise.all([
+    const [resultadoProdutos, resultadoMovimentacoes] = await Promise.allSettled([
       apiFetch("/produto?limit=5000"),
       apiFetch("/movimentacao"),
     ]);
-    if (!respostaProdutos || !respostaMovimentacoes) return;
-    const produtos = await lerResposta(respostaProdutos);
-    const resultadoMovimentacoes = await lerResposta(respostaMovimentacoes);
+    if (resultadoProdutos.status !== "fulfilled" || !resultadoProdutos.value) {
+      throw resultadoProdutos.reason || new Error("Não foi possível consultar os produtos.");
+    }
+    const produtos = await lerResposta(resultadoProdutos.value);
+    let movimentacoes = [];
+    if (resultadoMovimentacoes.status === "fulfilled" && resultadoMovimentacoes.value) {
+      try {
+        const historico = await lerResposta(resultadoMovimentacoes.value);
+        movimentacoes = Array.isArray(historico) ? historico : [];
+      } catch (erroHistorico) {
+        console.warn("Histórico de movimentações indisponível:", erroHistorico);
+        mostrarAviso("Produtos carregados. O histórico de movimentações está indisponível.", "aviso");
+      }
+    }
     const lista = Array.isArray(produtos) ? produtos : [];
-    const movimentacoes = Array.isArray(resultadoMovimentacoes)
-      ? resultadoMovimentacoes
-      : [];
     atualizarMetricas(lista, movimentacoes);
     renderizarTabela(lista);
   } catch (erro) {

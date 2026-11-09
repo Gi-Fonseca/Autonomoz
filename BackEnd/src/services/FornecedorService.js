@@ -15,7 +15,6 @@ class FornecedorService {
   async criar(dados) {
     const fornecedor = {
       nome: String(dados?.nome || "").trim(),
-      contato: String(dados?.contato || "").trim(),
       cnpj: String(dados?.cnpj || "").replace(/\D/g, ""),
       telefone: String(dados?.telefone || "").replace(/\D/g, ""),
       email: String(dados?.email || "")
@@ -24,14 +23,13 @@ class FornecedorService {
     };
     if (
       !fornecedor.nome ||
-      !fornecedor.contato ||
       !fornecedor.cnpj ||
       !fornecedor.telefone ||
       !fornecedor.email
     )
       throw {
         status: 400,
-        mensagem: "Nome, contato, CNPJ, telefone e email são obrigatórios",
+        mensagem: "Nome, CNPJ, telefone e email são obrigatórios",
       };
     if (fornecedor.cnpj.length < 11 || fornecedor.cnpj.length > 14)
       throw { status: 400, mensagem: "CNPJ deve conter entre 11 e 14 números" };
@@ -48,7 +46,7 @@ class FornecedorService {
     await this.buscarPorId(id);
     const body = dados || {};
     const permitidos = {};
-    for (const campo of ["nome", "contato", "cnpj", "telefone", "email"])
+    for (const campo of ["nome", "cnpj", "telefone", "email"])
       if (body[campo] !== undefined) permitidos[campo] = body[campo];
     if (!Object.keys(permitidos).length)
       throw { status: 400, mensagem: "Nenhum dado enviado para atualização" };

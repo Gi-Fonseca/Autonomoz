@@ -29,7 +29,9 @@ class FuncionarioRepository {
     return rows[0];
   }
   async count() {
-    const [rows] = await pool.query("SELECT COUNT(*) AS total FROM funcionario");
+    const [rows] = await pool.query(
+      "SELECT COUNT(*) AS total FROM funcionario",
+    );
     return Number(rows[0].total);
   }
 
@@ -56,6 +58,31 @@ class FuncionarioRepository {
       values,
     );
     return result.affectedRows;
+  }
+
+  async criarCodigoReset(idFuncionario, codigoHash, expiraEm) {
+    await pool.query("DELETE FROM redefinicao_senha WHERE id_funcionario=?", [
+      idFuncionario,
+    ]);
+    const [result] = await pool.query(
+      "INSERT INTO redefinicao_senha (id_funcionario,codigo_hash,expira_em) VALUES (?,?,?)",
+      [idFuncionario, codigoHash, expiraEm],
+    );
+    return result.insertId;
+  }
+
+  async buscarCodigoReset(codigoHash) {
+    const [rows] = await pool.query(
+      `SELECT r.id, r.id_funcionario, r.expira_em, f.email
+       FROM redefinicao_senha r JOIN funcionario f ON f.id = r.id_funcionario
+       WHERE r.codigo_hash=? LIMIT 1`,
+      [codigoHash],
+    );
+    return rows[0];
+  }
+
+  async excluirCodigoReset(id) {
+    await pool.query("DELETE FROM redefinicao_senha WHERE id=?", [id]);
   }
 
   async delete(id) {

@@ -81,9 +81,7 @@ function configurarLogin() {
       const resultado = await resposta.json();
 
       if (!resposta.ok || !resultado.sucesso) {
-        throw new Error(
-          resultado.mensagem || "E-mail ou senha inválidos.",
-        );
+        throw new Error(resultado.mensagem || "E-mail ou senha inválidos.");
       }
 
       const dados = resultado.dados || {};
@@ -92,7 +90,9 @@ function configurarLogin() {
         throw new Error("O backend não retornou um token de acesso válido.");
       }
 
-      const cargoRetornado = String(dados.usuario.cargo || "").trim().toLowerCase();
+      const cargoRetornado = String(dados.usuario.cargo || "")
+        .trim()
+        .toLowerCase();
       if (cargoRetornado !== cargoSelecionado.toLowerCase()) {
         throw new Error(
           "O perfil selecionado não corresponde ao cargo desta conta.",
@@ -103,7 +103,11 @@ function configurarLogin() {
       window.location.href = "index.html";
     } catch (erro) {
       console.error("Erro no login:", erro);
-      mostrarAviso(erro.message || "Não foi possível conectar ao backend.");
+      const mensagem =
+        erro instanceof TypeError
+          ? "Não foi possível conectar ao servidor. Verifique se o backend está iniciado em http://localhost:3000."
+          : erro.message || "Não foi possível concluir o login.";
+      mostrarAviso(mensagem);
     } finally {
       botaoLogin.disabled = false;
       botaoLogin.innerHTML = textoOriginal;

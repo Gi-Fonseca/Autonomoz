@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="src/css/login-cadastro.css" />
+  <title>Autonomoz | Resetar senha</title>
+</head>
+<body>
+  <main class="form-div">
+    <header class="form-header">
+      <h2>AutonoMoz</h2>
+      <p class="subtitulo">Redefinição de senha</p>
+    </header>
+    <form id="resetForm" class="form-body">
+      <p class="registro-link">Informe seu e-mail para gerar um código temporário.</p>
+      <div class="form-forms__group">
+        <label for="email" class="form-forms__label">E-mail</label>
+        <input class="form-forms__input" type="email" id="email" required placeholder="nome@email.com" />
+      </div>
+      <button class="form-body__btn" type="button" id="solicitarBtn">Gerar código</button>
+      <div id="etapaCodigo" hidden>
+        <div class="form-forms__group">
+          <label for="codigo" class="form-forms__label">Código de recuperação</label>
+          <input class="form-forms__input" inputmode="numeric" maxlength="6" id="codigo" placeholder="000000" />
+        </div>
+        <div class="form-forms__group">
+          <label for="novaSenha" class="form-forms__label">Nova senha</label>
+          <input class="form-forms__input" type="password" id="novaSenha" minlength="8" required placeholder="Mínimo de 8 caracteres" />
+        </div>
+        <button class="form-body__btn" type="submit">Redefinir senha</button>
+      </div>
+      <a class="registro-link" href="login.html">Voltar para o login</a>
+    </form>
+  </main>
+  <script src="src/js/config.js"></script>
+  <script src="src/scripts/reset-senha.js"></script>
+</body>
+</html>
