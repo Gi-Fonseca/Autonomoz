@@ -63,6 +63,20 @@ BEGIN
         ALTER TABLE produtos ADD COLUMN foto VARCHAR(255) NULL AFTER ano;
     END IF;
 
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'entrada_produto' AND COLUMN_NAME = 'motivo_entrada'
+    ) THEN
+        ALTER TABLE entrada_produto ADD COLUMN motivo_entrada VARCHAR(255) NULL AFTER fornecedor;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ajuste_produto' AND COLUMN_NAME = 'foto'
+    ) THEN
+        ALTER TABLE ajuste_produto ADD COLUMN foto VARCHAR(255) NULL AFTER motivo_ajuste;
+    END IF;
+
     IF EXISTS (
         SELECT 1 FROM information_schema.COLUMNS
         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saida_produto'

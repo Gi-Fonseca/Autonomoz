@@ -3,9 +3,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   await carregarSelects();
   configurarCategoriaPorTipo();
   configurarFormularioProduto();
+  configurarPreviaFotoProduto();
+  await carregarProdutoParaAjuste();
 });
 
 let categoriasDisponiveis = [];
+let produtoOriginal = null;
 
 async function lerDadosResposta(resposta) {
   const resultado = await resposta.json();
@@ -19,17 +22,13 @@ async function lerDadosResposta(resposta) {
 
 async function carregarSelects() {
   try {
-    const [resultadoCategorias, resultadoFornecedores] =
-      await Promise.allSettled([
-        fetchAutenticado("/categoria"),
-        fetchAutenticado("/fornecedor"),
-      ]);
+    const [respostaCategorias, respostaFornecedores] = await Promise.all([
+      fetchAutenticado("/categoria"),
+      fetchAutenticado("/fornecedor"),
+    ]);
 
-    if (
-      resultadoCategorias.status === "fulfilled" &&
-      resultadoCategorias.value
-    ) {
-      const categorias = await lerDadosResposta(resultadoCategorias.value);
+    if (respostaCategorias) {
+      const categorias = await lerDadosResposta(respostaCategorias);
       const selectCategoria = document.getElementById("prod-categoria");
 
       if (selectCategoria && Array.isArray(categorias)) {
@@ -38,22 +37,17 @@ async function carregarSelects() {
       }
     }
 
-    if (
-      resultadoFornecedores.status === "fulfilled" &&
-      resultadoFornecedores.value
-    ) {
-      const fornecedores = await lerDadosResposta(resultadoFornecedores.value);
+    if (respostaFornecedores) {
+      const fornecedores = await lerDadosResposta(respostaFornecedores);
       const selectFornecedor = document.getElementById("prod-fornecedor");
 
       if (selectFornecedor && Array.isArray(fornecedores)) {
-        selectFornecedor.innerHTML =
-          '<option value="">Selecione um fornecedor</option>' +
-          fornecedores
-            .map(
-              (fornecedor) =>
-                `<option value="${fornecedor.id_fornecedor}">${fornecedor.nome}</option>`,
-            )
-            .join("");
+        selectFornecedor.innerHTML = fornecedores
+          .map(
+            (fornecedor) =>
+              `<option value="${fornecedor.id_fornecedor}">${fornecedor.nome}</option>`,
+          )
+          .join("");
       }
     }
   } catch (erro) {
@@ -63,14 +57,8 @@ async function carregarSelects() {
 
 function categoriaPertenceAoTipo(categoria, tipo) {
   const nome = String(categoria?.tipo_produto || "").toLowerCase();
-  if (tipo === "VEICULO")
-    return nome.includes("veícul") || nome.includes("veicul");
-  return (
-    nome.includes("peç") ||
-    nome.includes("peca") ||
-    nome.includes("reposição") ||
-    nome.includes("reposicao")
-  );
+  if (tipo === "VEICULO") return nome.includes("veícul") || nome.includes("veicul");
+  return nome.includes("peç") || nome.includes("peca") || nome.includes("reposição") || nome.includes("reposicao");
 }
 
 function atualizarCategoriasPorTipo() {
@@ -79,7 +67,6 @@ function atualizarCategoriasPorTipo() {
   if (!selectTipo || !listaCategorias) return;
 
   listaCategorias.innerHTML = categoriasDisponiveis
-    .filter((categoria) => categoriaPertenceAoTipo(categoria, selectTipo.value))
     .map(
       (categoria) =>
         `<option value="${escaparHtml(categoria.tipo_produto)}"></option>`,
@@ -134,6 +121,13 @@ function configurarFormularioProduto() {
         String(categoria.tipo_produto).trim().toLowerCase() ===
         categoriaDigitada.toLowerCase(),
     );
+    const produtoId = new URLSearchParams(window.location.search).get("ajuste");
+    const motivoAjuste = document.getElementById("motivo-ajuste-cadastro")?.value.trim() || "";
+    if (produtoId && !motivoAjuste) {
+      mostrarAviso("O motivo do ajuste é obrigatório.", "aviso");
+      document.getElementById("motivo-ajuste-cadastro")?.focus();
+      return;
+    }
     const payload = {
       nome: document.getElementById("prod-nome").value.trim(),
       descricao:
@@ -153,9 +147,10 @@ function configurarFormularioProduto() {
       ano: document.getElementById("prod-ano")?.value
         ? Number(document.getElementById("prod-ano").value)
         : null,
-      fotoBase64,
-      status: true,
+      ...(fotoBase64 ? { fotoBase64 } : {}),
+      status: produtoOriginal ? Boolean(produtoOriginal.status) : true,
     };
+    if (produtoId) payload.motivo_ajuste = motivoAjuste;
 
     const categoriaSelecionada = categoriaExistente;
     if (
@@ -184,10 +179,13 @@ function configurarFormularioProduto() {
         botao.innerHTML = "Salvando...";
       }
 
-      const resposta = await fetchAutenticado("/produto", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
+      const resposta = await fetchAutenticado(
+        produtoId ? `/produto/${encodeURIComponent(produtoId)}` : "/produto",
+        {
+          method: produtoId ? "PUT" : "POST",
+          body: JSON.stringify(payload),
+        },
+      );
 
       if (!resposta) return;
 
@@ -197,7 +195,12 @@ function configurarFormularioProduto() {
         throw new Error(resultado.mensagem || "Erro ao salvar produto.");
       }
 
-      mostrarAviso("Produto cadastrado com sucesso!", "sucesso");
+      mostrarAviso(
+        produtoId
+          ? "Cadastro ajustado com sucesso; motivo salvo no histórico."
+          : "Produto cadastrado com sucesso!",
+        "sucesso",
+      );
       window.location.href = "inventario.html";
     } catch (erro) {
       console.error("Erro ao salvar produto:", erro);
@@ -209,6 +212,58 @@ function configurarFormularioProduto() {
       }
     }
   });
+}
+
+async function carregarProdutoParaAjuste() {
+  const produtoId = new URLSearchParams(window.location.search).get("ajuste");
+  if (!produtoId) return;
+  try {
+    const resposta = await fetchAutenticado(`/produto/${encodeURIComponent(produtoId)}`);
+    if (!resposta) return;
+    const produto = await lerDadosResposta(resposta);
+    produtoOriginal = produto;
+    document.getElementById("prod-id").value = produto.id_produto ?? produto.id ?? produtoId;
+    document.getElementById("titulo-tela").textContent = "Ajustar cadastro do item";
+    document.getElementById("btn-salvar-produto").textContent = "Salvar ajuste";
+    document.getElementById("bloco-motivo-ajuste").classList.remove("d-none");
+    document.getElementById("motivo-ajuste-cadastro").required = true;
+    const preencher = (id, valor) => {
+      const campo = document.getElementById(id);
+      if (campo && valor !== undefined && valor !== null) campo.value = valor;
+    };
+    preencher("prod-nome", produto.nome);
+    preencher("prod-descricao", produto.descricao || "");
+    preencher("prod-tipo", String(produto.tipo_item || "PECA").toUpperCase());
+    preencher("prod-categoria", produto.tipo_produto || produto.categoria || "");
+    preencher("prod-fornecedor", produto.id_fornecedor);
+    preencher("prod-qtd", produto.quantidade ?? 0);
+    preencher("prod-estoque-minimo", produto.estoque_minimo ?? 0);
+    preencher("prod-chassi", produto.chassi || "");
+    preencher("prod-placa", produto.placa || "");
+    preencher("prod-ano", produto.ano || "");
+    atualizarPreviewFotoProduto();
+  } catch (erro) {
+    console.error("Erro ao carregar cadastro para ajuste:", erro);
+    mostrarAviso(erro.message || "Não foi possível carregar o cadastro do item.");
+  }
+}
+
+function configurarPreviaFotoProduto() {
+  document.getElementById("file-img")?.addEventListener("change", atualizarPreviewFotoProduto);
+}
+
+function atualizarPreviewFotoProduto() {
+  const preview = document.getElementById("produto-foto-preview");
+  if (!preview) return;
+  const arquivo = document.getElementById("file-img")?.files?.[0];
+  if (arquivo) {
+    const url = URL.createObjectURL(arquivo);
+    preview.innerHTML = `<img src="${url}" alt="Prévia da nova foto" style="max-width:100%;max-height:170px;object-fit:contain">`;
+  } else if (produtoOriginal?.foto) {
+    preview.innerHTML = `<img src="/uploads/${encodeURIComponent(produtoOriginal.foto)}?v=${Date.now()}" alt="Foto atual do produto" style="max-width:100%;max-height:170px;object-fit:contain">`;
+  } else {
+    preview.textContent = "Sem foto";
+  }
 }
 
 function escaparHtml(valor) {

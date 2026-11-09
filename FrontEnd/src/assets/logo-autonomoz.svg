@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 430 154" role="img" aria-labelledby="title desc">
+  <title id="title">AutoNoMoz</title>
+  <desc id="desc">Silhueta vermelha de um carro sobre o nome AutoNoMoz em vermelho e grafite.</desc>
+  <g aria-hidden="true">
+    <path fill="#e21b2d" d="M39 73c3-8 7-16 13-24l16-5 21-21c5-5 12-8 20-8h90c15 0 29 4 42 12l27 17 47 3c24 2 43 8 58 20l13 12 3 16c1 6-4 11-10 11h-8a28 28 0 0 0-54 0H137a28 28 0 0 0-54 0h-9c-13 0-23-9-25-22l-3-21c-1-4 0-7 2-10z"/>
+    <path fill="#f7f8fa" d="m102 44 17-18c3-3 7-5 12-5h37v24h-66zm77-23h20c14 0 26 3 38 10l19 13h-77z"/>
+    <path fill="#394047" d="M119 27h42v15h-56zm64 0h15c13 0 24 3 34 9l9 6h-58z"/>
+    <path fill="#f7f8fa" d="M270 50h35c18 1 33 5 45 12h-51c-9 0-18-4-24-12zM47 62l16-3-3 12H48z"/>
+    <path fill="#fff" opacity=".9" d="M130 53h112c12 0 23 5 30 14l7 9h-89c-18 0-34-7-47-20z"/>
+    <path fill="#e21b2d" d="M143 57h96c10 0 19 4 25 11l2 3h-87c-13 0-25-5-36-14z"/>
+    <circle cx="110" cy="105" r="24" fill="#fff"/>
+    <circle cx="110" cy="105" r="19" fill="#394047"/>
+    <circle cx="333" cy="105" r="24" fill="#fff"/>
+    <circle cx="333" cy="105" r="19" fill="#394047"/>
+    <path fill="#fff" opacity=".35" d="M69 84h246v3H69z"/>
+  </g>
+  <text x="40" y="148" font-family="Arial, Helvetica, sans-serif" font-size="48" font-weight="800" letter-spacing="2.2" textLength="350" lengthAdjust="spacingAndGlyphs"><tspan fill="#e21b2d">AUTO</tspan><tspan fill="#394047">NOMOZ</tspan></text>
+</svg>

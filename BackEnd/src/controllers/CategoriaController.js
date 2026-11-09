@@ -1,10 +1,14 @@
 const CategoriaService = require("../services/CategoriaService");
+const CategoriaRepository = require("../repositories/CategoriaRepository");
 
 class CategoriaController {
   async listarCategoria(req, res) {
     try {
-      const resultado = await CategoriaService.listarCategoria();
-      res.json(resultado);
+      const listar = CategoriaService?.listarCategoria;
+      const resultado = typeof listar === "function"
+        ? await listar.call(CategoriaService)
+        : await CategoriaRepository.listarCategoria();
+      res.json({ sucesso: true, dados: Array.isArray(resultado) ? resultado : [] });
     } catch (erro) {
       res.status(erro.status || 500).json({
         sucesso: false,

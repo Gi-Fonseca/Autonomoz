@@ -75,21 +75,71 @@ class ProdutoRepository {
       "ano",
       "foto",
     ];
-    const campos = [],
-      valores = [];
-    // Filtra campos permitidos
-    for (const campo of permitidos)
-      if (dados[campo] !== undefined) {
-        campos.push(`${campo} = ?`);
-        valores.push(dados[campo]);
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [produtos] = await connection.query(
+        "SELECT quantidade, id_categoria FROM produtos WHERE id_produto = ? FOR UPDATE",
+        [id],
+      );
+      if (!produtos.length) throw Object.assign(new Error("Produto não encontrado."), { status: 404 });
+
+      const dadosAtualizados = { ...dados };
+      if (dadosAtualizados.id_categoria !== undefined) {
+        const idCategoriaSolicitado = Number(dadosAtualizados.id_categoria);
+        if (Number.isInteger(idCategoriaSolicitado) && idCategoriaSolicitado > 0) {
+          const [categorias] = await connection.query(
+            "SELECT id_categoria FROM categoria WHERE id_categoria = ? LIMIT 1",
+            [idCategoriaSolicitado],
+          );
+          if (categorias.length) {
+            dadosAtualizados.id_categoria = idCategoriaSolicitado;
+          } else {
+            dadosAtualizados.id_categoria = produtos[0].id_categoria ?? null;
+          }
+        } else {
+          // NULL é permitido pelo vínculo e preserva a categoria original
+          // quando o formulário não conseguiu resolver o ID selecionado.
+          dadosAtualizados.id_categoria = produtos[0].id_categoria ?? null;
+        }
       }
-    if (!campos.length) return 0;
-    valores.push(id);
-    const [resultado] = await pool.query(
-      `UPDATE produtos SET ${campos.join(", ")} WHERE id_produto = ?`,
-      valores,
-    );
-    return resultado.affectedRows;
+
+      const campos = [];
+      const valores = [];
+      for (const campo of permitidos) {
+        if (dadosAtualizados[campo] !== undefined) {
+          campos.push(`${campo} = ?`);
+          valores.push(dadosAtualizados[campo]);
+        }
+      }
+      if (campos.length) {
+        valores.push(id);
+        await connection.query(
+          `UPDATE produtos SET ${campos.join(", ")} WHERE id_produto = ?`,
+          valores,
+        );
+      }
+
+      const quantidadeAntes = Number(produtos[0].quantidade || 0);
+      const quantidadeDepois = dados.quantidade === undefined
+        ? quantidadeAntes
+        : Number(dados.quantidade);
+      const delta = quantidadeDepois - quantidadeAntes;
+      const [ajuste] = await connection.query(
+        `INSERT INTO ajuste_produto
+         (id_produto, id_funcionario, quantidade, data_ajuste, motivo_ajuste, foto)
+         VALUES (?, ?, ?, NOW(), ?, NULL)`,
+        [id, dados.id_funcionario, delta, dados.motivo_ajuste],
+      );
+      await connection.query("INSERT INTO movimentacao (id_ajuste) VALUES (?)", [ajuste.insertId]);
+      await connection.commit();
+      return { affectedRows: 1, id_ajuste: ajuste.insertId, quantidade_delta: delta };
+    } catch (erro) {
+      await connection.rollback();
+      throw erro;
+    } finally {
+      connection.release();
+    }
   }
 }
 module.exports = new ProdutoRepository();

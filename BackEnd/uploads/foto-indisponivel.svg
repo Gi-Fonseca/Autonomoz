@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-labelledby="titulo descricao">
+  <title id="titulo">Foto indisponível</title>
+  <desc id="descricao">Não há uma foto cadastrada para este item.</desc>
+  <rect width="640" height="400" rx="24" fill="#f3f4f6"/>
+  <g fill="none" stroke="#9ca3af" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="190" y="90" width="260" height="190" rx="18"/>
+    <circle cx="250" cy="155" r="25"/>
+    <path d="m210 250 72-70 45 42 40-34 63 62"/>
+  </g>
+  <text x="320" y="340" fill="#6b7280" font-family="Arial,sans-serif" font-size="27" text-anchor="middle">Foto indisponível</text>
+</svg>

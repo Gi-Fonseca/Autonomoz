@@ -84,3 +84,163 @@ body {
 .autonomoz-aviso-icone { display: grid; flex: 0 0 24px; width: 24px; height: 24px; place-items: center; border: 2px solid currentColor; border-radius: 50%; }
 .autonomoz-aviso-texto { flex: 1; }
 .autonomoz-aviso-fechar { padding: 0 2px; border: 0; background: transparent; color: inherit; font-size: 1.35rem; line-height: 1; cursor: pointer; }
+
+
+/* Ações compactas e alinhadas na tabela do inventário */
+.acoes-inventario {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+.btn-acao-estoque {
+    display: inline-flex;
+    min-width: 66px;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+    padding: .35rem .5rem;
+    border: 1px solid transparent;
+    border-radius: .5rem;
+    font-size: .75rem;
+    font-weight: 700;
+    line-height: 1.1;
+    white-space: nowrap;
+    box-shadow: none;
+}
+.btn-acao-estoque i { font-size: .85rem; }
+.btn-acao-entrada { color: #146c43; background: #e8f4ed; border-color: #b7dfc8; }
+.btn-acao-entrada:hover { color: #fff; background: #198754; border-color: #198754; }
+.btn-acao-saida { color: #b02a37; background: #f8e9eb; border-color: #efc2c7; }
+.btn-acao-saida:hover { color: #fff; background: #dc3545; border-color: #dc3545; }
+.btn-acao-ajustes { color: #343a40; background: #e9ecef; border-color: #ced4da; }
+.btn-acao-ajustes:hover { color: #fff; background: #6c757d; border-color: #6c757d; }
+@media (max-width: 1200px) {
+    .acoes-inventario { gap: 4px; }
+    .btn-acao-estoque { min-width: 60px; padding: .3rem .35rem; font-size: .7rem; }
+}
+
+
+/* Alternância global de tema */
+.botao-tema {
+    position: fixed;
+    z-index: 1050;
+    right: 20px;
+    bottom: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 44px;
+    padding: 10px 15px;
+    color: #343a40;
+    background: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 999px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.18);
+    font: 700 .875rem/1 system-ui, sans-serif;
+    cursor: pointer;
+    transition: background-color .2s ease, color .2s ease, transform .2s ease;
+}
+.botao-tema:hover { transform: translateY(-2px); background: #f1f3f5; }
+.botao-tema i { font-size: 1rem; }
+
+html[data-tema="escuro"] body,
+html[data-tema="escuro"] body.bg-light {
+    color: #e5e7eb !important;
+    background-color: #17191d !important;
+}
+html[data-tema="escuro"] main,
+html[data-tema="escuro"] .min-vh-100 {
+    color: #e5e7eb;
+}
+html[data-tema="escuro"] aside,
+html[data-tema="escuro"] header,
+html[data-tema="escuro"] .card,
+html[data-tema="escuro"] .modal-content,
+html[data-tema="escuro"] .dropdown-menu,
+html[data-tema="escuro"] .list-group-item,
+html[data-tema="escuro"] .bg-white {
+    color: #e5e7eb !important;
+    background-color: #22252b !important;
+    border-color: #3b4048 !important;
+}
+html[data-tema="escuro"] .bg-light,
+html[data-tema="escuro"] .input-group-text {
+    color: #d1d5db !important;
+    background-color: #2b2f36 !important;
+    border-color: #454b55 !important;
+}
+html[data-tema="escuro"] .text-dark,
+html[data-tema="escuro"] .text-body,
+html[data-tema="escuro"] .modal-title,
+html[data-tema="escuro"] .form-label,
+html[data-tema="escuro"] .card h1,
+html[data-tema="escuro"] .card h2,
+html[data-tema="escuro"] .card h3,
+html[data-tema="escuro"] .card h4,
+html[data-tema="escuro"] .card h5,
+html[data-tema="escuro"] .card h6 {
+    color: #f3f4f6 !important;
+}
+html[data-tema="escuro"] .text-muted,
+html[data-tema="escuro"] .form-text {
+    color: #aeb5bf !important;
+}
+html[data-tema="escuro"] .table {
+    --bs-table-color: #e5e7eb;
+    --bs-table-bg: #22252b;
+    --bs-table-border-color: #3b4048;
+    --bs-table-hover-color: #fff;
+    --bs-table-hover-bg: #2b3038;
+    color: #e5e7eb !important;
+    border-color: #3b4048 !important;
+}
+html[data-tema="escuro"] .table-light,
+html[data-tema="escuro"] .table-light th,
+html[data-tema="escuro"] thead,
+html[data-tema="escuro"] thead th {
+    --bs-table-color: #f3f4f6;
+    --bs-table-bg: #2b2f36;
+    color: #f3f4f6 !important;
+    background-color: #2b2f36 !important;
+}
+html[data-tema="escuro"] .form-control,
+html[data-tema="escuro"] .form-select {
+    color: #f3f4f6 !important;
+    background-color: #2b2f36 !important;
+    border-color: #4b515c !important;
+}
+html[data-tema="escuro"] .form-control::placeholder { color: #9ca3af !important; }
+html[data-tema="escuro"] .form-control:focus,
+html[data-tema="escuro"] .form-select:focus {
+    border-color: #e45a6a !important;
+    box-shadow: 0 0 0 .2rem rgba(192,0,26,.22) !important;
+}
+html[data-tema="escuro"] .border,
+html[data-tema="escuro"] .border-top,
+html[data-tema="escuro"] .border-bottom,
+html[data-tema="escuro"] .border-end,
+html[data-tema="escuro"] hr {
+    border-color: #3b4048 !important;
+}
+html[data-tema="escuro"] .nav-link:not(.active) { color: #cbd0d8 !important; }
+html[data-tema="escuro"] .nav-link:not(.active):hover { color: #fff !important; background: #373b43 !important; }
+html[data-tema="escuro"] .btn-outline-secondary,
+html[data-tema="escuro"] .btn-light {
+    color: #e5e7eb !important;
+    background-color: #30343b !important;
+    border-color: #555c67 !important;
+}
+html[data-tema="escuro"] .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
+html[data-tema="escuro"] .botao-tema {
+    color: #f3f4f6;
+    background: #30343b;
+    border-color: #555c67;
+}
+html[data-tema="escuro"] .botao-tema:hover { background: #3b414a; }
+html[data-tema="escuro"] .modal-backdrop { --bs-backdrop-bg: #000; }
+
+@media (max-width: 576px) {
+    .botao-tema { right: 12px; bottom: 12px; min-height: 42px; padding: 9px 12px; }
+}

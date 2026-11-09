@@ -4,7 +4,6 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const routes = require("./routes");
-const pool = require("./config/database");
 const swaggerUi = require("swagger-ui-express");
 const swaggerFile = require("./swagger_output.json");
 
@@ -24,13 +23,6 @@ app.use(
         return callback(null, true);
       }
 
-      // Navegadores enviam Origin: null quando o HTML é aberto diretamente
-      // via file://. Isso é útil no desenvolvimento local, mas não deve ser
-      // permitido em produção.
-      if (origin === "null" && process.env.NODE_ENV !== "production") {
-        return callback(null, true);
-      }
-
       if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
@@ -43,30 +35,31 @@ app.use(
   }),
 );
 
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ limit: "10mb", extended: true }));
+// Uma imagem de até 10 MB cresce ao ser convertida para Base64 no navegador.
+app.use(express.json({ limit: "16mb" }));
+app.use(express.urlencoded({ limit: "16mb", extended: true }));
 
 // Serve o frontend estático pela mesma aplicação e pela mesma porta.
 app.use(express.static(path.join(__dirname, "../../FrontEnd")));
 
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+// Arquivos estáticos inexistentes não devem cair no middleware JWT da API.
+const imagemFallback = path.join(
+  __dirname,
+  "..",
+  "uploads",
+  "foto-indisponivel.svg",
+);
+app.use("/uploads", (req, res) => res.sendFile(imagemFallback));
+app.get("/favicon.ico", (req, res) => res.status(204).end());
+app.use((req, res, next) => {
+  if (/\.(?:ico|png|jpe?g|gif|webp|svg)$/i.test(req.path)) {
+    return res.sendFile(imagemFallback);
+  }
+  return next();
+});
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerFile));
-
-app.get("/health", async (req, res) => {
-  try {
-    await pool.query("SELECT 1 AS ok");
-    return res.json({ status: "ok", banco: "conectado" });
-  } catch (erro) {
-    console.error("[HEALTH] Banco indisponível:", erro);
-    return res.status(503).json({
-      status: "erro",
-      banco: "indisponível",
-      mensagem:
-        "Não foi possível conectar ao MySQL. Verifique o serviço e as configurações do banco.",
-    });
-  }
-});
 
 // Contrato único: sucesso, mensagem e dados.
 // Nunca expõe stack ou erro interno na resposta ao cliente.

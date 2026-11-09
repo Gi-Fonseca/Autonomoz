@@ -1,37 +1,36 @@
 const db = require("../config/database");
 
+function erroHttp(mensagem, status) {
+  return Object.assign(new Error(mensagem), { status });
+}
+
 class EntradaRepository {
   async cadastrar(dados) {
-    const {
-      id_produto,
-      id_funcionario,
-      quantidade,
-      data_entrada,
-      valor_compra,
-      nf,
-      fornecedor,
-    } = dados;
     const connection = await db.getConnection();
     try {
       await connection.beginTransaction();
       const [result] = await connection.execute(
         `INSERT INTO entrada_produto
-                 (id_produto, id_funcionario, quantidade, data_entrada, valor_compra, nf, fornecedor)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+         (id_produto, id_funcionario, quantidade, data_entrada, valor_compra, nf, fornecedor, motivo_entrada)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          id_produto,
-          id_funcionario,
-          quantidade,
-          data_entrada,
-          valor_compra,
-          nf || null,
-          fornecedor,
+          dados.id_produto,
+          dados.id_funcionario,
+          dados.quantidade,
+          dados.data_entrada,
+          dados.valor_compra,
+          dados.nf || null,
+          dados.fornecedor || null,
+          dados.motivo_entrada,
         ],
       );
-      await connection.execute(
+      const [estoque] = await connection.execute(
         "UPDATE produtos SET quantidade = quantidade + ? WHERE id_produto = ?",
-        [quantidade, id_produto],
+        [dados.quantidade, dados.id_produto],
       );
+      if (!estoque.affectedRows) {
+        throw erroHttp("Produto não encontrado para registrar a entrada.", 404);
+      }
       await connection.execute(
         "INSERT INTO movimentacao (id_entrada) VALUES (?)",
         [result.insertId],
@@ -45,47 +44,51 @@ class EntradaRepository {
       connection.release();
     }
   }
+
   async listar() {
     const [rows] = await db.execute(
-      `SELECT e.*, p.nome produto_nome, f.nome funcionario_nome FROM entrada_produto e LEFT JOIN produtos p ON e.id_produto=p.id_produto LEFT JOIN funcionario f ON e.id_funcionario=f.id ORDER BY e.id_entrada DESC`,
+      `SELECT e.*, p.nome AS produto_nome, f.nome AS funcionario_nome
+       FROM entrada_produto e
+       LEFT JOIN produtos p ON e.id_produto = p.id_produto
+       LEFT JOIN funcionario f ON e.id_funcionario = f.id
+       ORDER BY e.id_entrada DESC`,
     );
     return rows;
   }
+
   async buscarPorId(id) {
     const [rows] = await db.execute(
-      `SELECT e.*, p.nome produto_nome, f.nome funcionario_nome FROM entrada_produto e LEFT JOIN produtos p ON e.id_produto=p.id_produto LEFT JOIN funcionario f ON e.id_funcionario=f.id WHERE e.id_entrada=?`,
+      `SELECT e.*, p.nome AS produto_nome, f.nome AS funcionario_nome
+       FROM entrada_produto e
+       LEFT JOIN produtos p ON e.id_produto = p.id_produto
+       LEFT JOIN funcionario f ON e.id_funcionario = f.id
+       WHERE e.id_entrada = ?`,
       [id],
     );
-    if (!rows.length)
-      throw Object.assign(new Error("Registro de entrada não encontrado."), {
-        status: 404,
-      });
+    if (!rows.length) throw erroHttp("Registro de entrada não encontrado.", 404);
     return rows[0];
   }
+
   async atualizar(id, dados) {
-    const allowed = [
+    const permitidos = [
       "id_produto",
-      "id_funcionario",
       "quantidade",
       "data_entrada",
       "valor_compra",
       "nf",
       "fornecedor",
+      "motivo_entrada",
     ];
-    const keys = allowed.filter((key) => dados[key] !== undefined);
-    if (!keys.length)
-      throw Object.assign(new Error("Nenhum campo válido informado."), {
-        status: 400,
-      });
+    const chaves = permitidos.filter((chave) => dados[chave] !== undefined);
+    if (!chaves.length) throw erroHttp("Nenhum campo válido informado.", 400);
+
     const [result] = await db.execute(
-      `UPDATE entrada_produto SET ${keys.map((key) => `${key}=?`).join(",")} WHERE id_entrada=?`,
-      [...keys.map((key) => dados[key]), id],
+      `UPDATE entrada_produto SET ${chaves.map((chave) => `${chave} = ?`).join(", ")} WHERE id_entrada = ?`,
+      [...chaves.map((chave) => dados[chave]), id],
     );
-    if (!result.affectedRows)
-      throw Object.assign(new Error("Registro de entrada não encontrado."), {
-        status: 404,
-      });
+    if (!result.affectedRows) throw erroHttp("Registro de entrada não encontrado.", 404);
     return { id_entrada: Number(id), ...dados };
   }
 }
+
 module.exports = new EntradaRepository();

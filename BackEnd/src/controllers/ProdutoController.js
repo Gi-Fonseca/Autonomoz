@@ -53,6 +53,7 @@ class ProdutoController {
   async alterarDados(req, res) {
     try {
       const dados = { ...(req.body || {}) };
+      dados.id_funcionario = Number(req.usuario?.id);
       if (dados.fotoBase64) {
         dados.foto = salvarFotoBase64(dados.fotoBase64);
         delete dados.fotoBase64;

@@ -1,56 +1,49 @@
 const MovimentacaoService = require("../services/MovimentacaoService");
 
+function erroHttp(erro, res) {
+  return res.status(erro.status || 500).json({
+    sucesso: false,
+    mensagem: erro.mensagem || erro.message || "Erro ao processar a movimentação.",
+  });
+}
+
 class MovimentacaoController {
   async listar(req, res) {
     try {
-      return res.json(await MovimentacaoService.listar());
+      const resultado = await MovimentacaoService.listar();
+      return res.status(200).json(resultado);
     } catch (erro) {
-      console.error("[MOVIMENTACAO] Erro ao listar:", erro);
-      return res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro ao carregar movimentações",
-      });
+      return erroHttp(erro, res);
     }
   }
 
   async buscarPorId(req, res) {
     try {
-      return res.json(await MovimentacaoService.buscarPorId(req.params.id));
+      const resultado = await MovimentacaoService.buscarPorId(req.params.id);
+      return res.status(200).json(resultado);
     } catch (erro) {
-      return res.status(erro.status || 500).json({ sucesso: false, mensagem: erro.mensagem || erro.message || "Erro ao buscar movimentação" });
+      return erroHttp(erro, res);
     }
   }
 
   async cadastrar(req, res) {
     try {
-      return res.status(201).json({
-        ...(await MovimentacaoService.cadastrar(req.body || {})),
-        mensagem: "Movimentação registrada com sucesso",
-      });
+      const resultado = await MovimentacaoService.cadastrar(req.body || {});
+      return res.status(201).json(resultado);
     } catch (erro) {
-      return res.status(erro.status || 500).json({ sucesso: false, mensagem: erro.mensagem || erro.message || "Erro ao registrar movimentação" });
+      return erroHttp(erro, res);
     }
   }
 
   async atualizar(req, res) {
     try {
-      return res.json({
-        ...(await MovimentacaoService.atualizar(req.params.id, req.body || {})),
-        mensagem: "Movimentação atualizada com sucesso",
-      });
+      const resultado = await MovimentacaoService.atualizar(
+        req.params.id,
+        req.body || {},
+      );
+      return res.status(200).json(resultado);
     } catch (erro) {
-      return res.status(erro.status || 500).json({ sucesso: false, mensagem: erro.mensagem || erro.message || "Erro ao atualizar movimentação" });
-    }
-  }
-
-  async deletar(req, res) {
-    try {
-      return res.json({
-        ...(await MovimentacaoService.deletar(req.params.id)),
-        mensagem: "Movimentação excluída com sucesso",
-      });
-    } catch (erro) {
-      return res.status(erro.status || 500).json({ sucesso: false, mensagem: erro.mensagem || erro.message || "Erro ao excluir movimentação" });
+      return erroHttp(erro, res);
     }
   }
 }

@@ -1,7 +1,27 @@
 document.addEventListener("DOMContentLoaded", () => {
   verificarAutenticacao();
+  configurarAcessibilidadeModalMovimentacao();
   carregarInventario();
+  document
+    .getElementById("mov-tipo")
+    ?.addEventListener("change", configurarQuantidadeMovimentacao);
 });
+
+function configurarAcessibilidadeModalMovimentacao() {
+  const modal = document.getElementById("modalMovimentacao");
+  if (!modal) return;
+  let disparador = null;
+
+  modal.addEventListener("show.bs.modal", () => {
+    disparador = document.activeElement;
+  });
+  modal.addEventListener("hide.bs.modal", () => {
+    if (modal.contains(document.activeElement)) document.activeElement.blur();
+  });
+  modal.addEventListener("hidden.bs.modal", () => {
+    if (disparador?.isConnected) disparador.focus({ preventScroll: true });
+  });
+}
 
 async function lerResposta(resposta) {
   let resultado = await resposta.json();
@@ -36,26 +56,18 @@ async function carregarInventario() {
   tbody.innerHTML =
     '<tr><td colspan="9" class="text-center py-4 text-muted"><div class="spinner-border text-danger spinner-border-sm me-2" role="status"></div>Carregando inventário do servidor...</td></tr>';
   try {
-    const [resultadoProdutos, resultadoMovimentacoes] = await Promise.allSettled([
+    const [respostaProdutos, respostaSaidas] = await Promise.all([
       apiFetch("/produto?limit=5000"),
-      apiFetch("/movimentacao"),
+      apiFetch("/saida"),
     ]);
-    if (resultadoProdutos.status !== "fulfilled" || !resultadoProdutos.value) {
-      throw resultadoProdutos.reason || new Error("Não foi possível consultar os produtos.");
-    }
-    const produtos = await lerResposta(resultadoProdutos.value);
-    let movimentacoes = [];
-    if (resultadoMovimentacoes.status === "fulfilled" && resultadoMovimentacoes.value) {
-      try {
-        const historico = await lerResposta(resultadoMovimentacoes.value);
-        movimentacoes = Array.isArray(historico) ? historico : [];
-      } catch (erroHistorico) {
-        console.warn("Histórico de movimentações indisponível:", erroHistorico);
-        mostrarAviso("Produtos carregados. O histórico de movimentações está indisponível.", "aviso");
-      }
-    }
+    if (!respostaProdutos || !respostaSaidas) return;
+    const produtos = await lerResposta(respostaProdutos);
+    const resultadoSaidas = await lerResposta(respostaSaidas);
     const lista = Array.isArray(produtos) ? produtos : [];
-    atualizarMetricas(lista, movimentacoes);
+    const saidas = Array.isArray(resultadoSaidas)
+      ? resultadoSaidas
+      : [];
+    atualizarMetricas(lista, saidas);
     renderizarTabela(lista);
   } catch (erro) {
     console.error("Erro ao carregar inventário:", erro);
@@ -63,7 +75,7 @@ async function carregarInventario() {
   }
 }
 
-function atualizarMetricas(produtos, movimentacoes = []) {
+function atualizarMetricas(produtos, saidas = []) {
   const totalUnidades = produtos.reduce(
     (soma, item) => soma + Number(item.quantidade || 0),
     0,
@@ -75,22 +87,48 @@ function atualizarMetricas(produtos, movimentacoes = []) {
   const estoqueCritico = document.getElementById("estoque-critico");
   const valorEstoque = document.getElementById("valor-estoque");
   const giroInventario = document.getElementById("giro-inventario");
-  const totalSaidas = movimentacoes
-    .filter(
-      (movimentacao) =>
-        String(movimentacao.tipo || "").toUpperCase() === "SAIDA",
-    )
-    .reduce(
-      (total, movimentacao) => total + Number(movimentacao.quantidade || 0),
-      0,
-    );
-  const indiceSaidas = totalUnidades > 0 ? totalSaidas / totalUnidades : 0;
+  const saidasPeriodo = document.getElementById("saidas-periodo");
+  const agora = Date.now();
+  const inicioPeriodo = agora - 30 * 24 * 60 * 60 * 1000;
+  const totalSaidas30Dias = saidas.reduce((total, saida) => {
+    const dataSaida = converterDataSaida(saida.data_saida || saida.data_movimentacao);
+    const instante = dataSaida?.getTime();
+    if (!Number.isFinite(instante) || instante < inicioPeriodo || instante > agora) {
+      return total;
+    }
+    return total + Number(saida.quantidade || 0);
+  }, 0);
+  const indiceSaidas = totalUnidades > 0 ? totalSaidas30Dias / totalUnidades : 0;
   if (totalItens) totalItens.textContent = produtos.length;
   if (estoqueCritico)
     estoqueCritico.innerHTML = `${criticos} <small class="text-muted fs-6">SKUs</small>`;
   if (valorEstoque) valorEstoque.textContent = `${totalUnidades} unidades`;
   if (giroInventario)
-    giroInventario.textContent = `${indiceSaidas.toFixed(1).replace(".", ",")}x`;
+    giroInventario.textContent = `${indiceSaidas.toFixed(2).replace(".", ",")}x`;
+  if (saidasPeriodo)
+    saidasPeriodo.textContent = `${totalSaidas30Dias} ${totalSaidas30Dias === 1 ? "unidade saiu" : "unidades saíram"} nos últimos 30 dias`;
+}
+
+function converterDataSaida(valor) {
+  if (!valor) return null;
+  if (valor instanceof Date) return valor;
+  if (typeof valor === "string") {
+    const mysql = valor.match(
+      /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/,
+    );
+    if (mysql) {
+      return new Date(
+        Number(mysql[1]),
+        Number(mysql[2]) - 1,
+        Number(mysql[3]),
+        Number(mysql[4] || 0),
+        Number(mysql[5] || 0),
+        Number(mysql[6] || 0),
+      );
+    }
+  }
+  const data = new Date(valor);
+  return Number.isNaN(data.getTime()) ? null : data;
 }
 
 function renderizarTabela(produtos) {
@@ -118,7 +156,7 @@ function renderizarTabela(produtos) {
       Number(produto.quantidade || 0) < 3;
     const classeNome = alertaEstoque ? "text-danger" : "text-dark";
     const foto = produto.foto
-      ? `<img src="/uploads/${encodeURIComponent(produto.foto)}" alt="Foto de ${escaparHtml(produto.nome)}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;">`
+      ? `<img src="/uploads/${encodeURIComponent(produto.foto)}?v=${encodeURIComponent(produto.foto)}" alt="Foto de ${escaparHtml(produto.nome)}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;">`
       : '<span class="text-muted small">Sem foto</span>';
     tbody.innerHTML += `<tr>
       <td class="ps-3">${foto}</td>
@@ -128,13 +166,17 @@ function renderizarTabela(produtos) {
       <td class="fw-semibold text-secondary">${escaparHtml(produto.fornecedor_nome || "-")}</td>
       <td class="small text-muted">${escaparHtml(produto.descricao || produto.placa || "-")}</td>
       <td class="fw-bold text-dark">${produto.quantidade ?? 0}</td>
-      <td class="text-end pe-3"><div class="btn-group btn-group-sm">
-        <button class="btn btn-outline-success fw-bold" onclick="abrirModalMov(${id}, '${escaparTexto(produto.nome)}', 'ENTRADA')">+ Entrada</button>
-        <button class="btn btn-outline-danger fw-bold" onclick="abrirModalMov(${id}, '${escaparTexto(produto.nome)}', 'SAIDA')">- Saída</button>
-        <button class="btn btn-outline-secondary fw-bold" onclick="abrirModalMov(${id}, '${escaparTexto(produto.nome)}', 'AJUSTE')">Ajuste</button>
+      <td class="text-end pe-3"><div class="acoes-inventario">
+        <button class="btn btn-sm btn-acao-estoque btn-acao-entrada" title="Registrar entrada no estoque" onclick="abrirModalMov(${id}, '${escaparTexto(produto.nome)}', 'ENTRADA')"><i class="bi bi-box-arrow-in-down me-1"></i>Entrada</button>
+        <button class="btn btn-sm btn-acao-estoque btn-acao-saida" title="Registrar saída do estoque" onclick="abrirModalMov(${id}, '${escaparTexto(produto.nome)}', 'SAIDA')"><i class="bi bi-box-arrow-up-right me-1"></i>Saída</button>
+        <button class="btn btn-sm btn-acao-estoque btn-acao-ajustes" title="Ajustar cadastro completo deste produto" onclick="abrirAjusteCadastro(${id})"><i class="bi bi-sliders me-1"></i>Ajustes</button>
       </div></td>
     </tr>`;
   });
+}
+
+function abrirAjusteCadastro(id) {
+  window.location.href = `produto-cadas.html?ajuste=${encodeURIComponent(id)}`;
 }
 
 function abrirDetalhesProduto(id) {
@@ -255,7 +297,26 @@ function abrirModalMov(id, nome, tipo) {
   document.getElementById("mov-tipo").value = tipo;
   document.getElementById("mov-qtd").value = 1;
   document.getElementById("mov-obs").value = "";
+  configurarQuantidadeMovimentacao();
   new bootstrap.Modal(document.getElementById("modalMovimentacao")).show();
+}
+
+function configurarQuantidadeMovimentacao() {
+  const tipo = document.getElementById("mov-tipo")?.value;
+  const quantidade = document.getElementById("mov-qtd");
+  const ajuda = document.getElementById("mov-qtd-ajuda");
+  if (!quantidade) return;
+  if (tipo === "AJUSTE") {
+    quantidade.removeAttribute("min");
+    if (ajuda) {
+      ajuda.textContent = "Use positivo para adicionar e negativo para retirar do estoque.";
+      ajuda.classList.remove("d-none");
+    }
+  } else {
+    quantidade.min = "1";
+    if (Number(quantidade.value) <= 0) quantidade.value = "1";
+    if (ajuda) ajuda.classList.add("d-none");
+  }
 }
 
 async function confirmarMovimentacao() {
@@ -264,7 +325,10 @@ async function confirmarMovimentacao() {
   const quantidade = Number(document.getElementById("mov-qtd").value);
   const campoMotivo = document.getElementById("mov-obs");
   const observacao = campoMotivo.value.trim();
-  if (!quantidade || quantidade <= 0)
+  if (
+    !Number.isInteger(quantidade) ||
+    (tipo === "AJUSTE" ? quantidade === 0 : quantidade <= 0)
+  )
     return mostrarAviso("Informe uma quantidade válida.", "aviso");
   if (!observacao) {
     mostrarAviso("O motivo da movimentação é obrigatório.", "aviso");
@@ -279,10 +343,14 @@ async function confirmarMovimentacao() {
   const payload = {
     id_produto: Number(produtoId),
     quantidade,
-    motivo_ajuste: observacao,
-    motivo_saida: observacao,
     valor_compra: 0,
   };
+  const campoMotivoPorTipo = {
+    ENTRADA: "motivo_entrada",
+    SAIDA: "motivo_saida",
+    AJUSTE: "motivo_ajuste",
+  }[tipo];
+  payload[campoMotivoPorTipo] = observacao;
   const rota = { ENTRADA: "/entrada", SAIDA: "/saida", AJUSTE: "/ajuste" }[
     tipo
   ];

@@ -1,14 +1,14 @@
 const db = require("../config/database");
 
 class MovimentacaoRepository {
-  // Lista o histórico consolidado de entradas, saídas e ajustes
-  async listar() {
+  // Lista o histórico consolidado de entradas, saídas e ajustes.
+  async listar(limite = 500) {
     const query = `
       SELECT * FROM (
         SELECT e.id_entrada AS referencia_id, e.data_entrada AS data_movimentacao,
                'ENTRADA' AS tipo, e.quantidade, p.nome AS produto_nome,
                f.nome AS funcionario_nome,
-               CONCAT('NF: ', COALESCE(e.nf, '-')) AS motivo
+               COALESCE(NULLIF(e.motivo_entrada, ''), CONCAT('NF: ', COALESCE(e.nf, '-'))) AS motivo
         FROM entrada_produto e
         LEFT JOIN produtos p ON p.id_produto = e.id_produto
         LEFT JOIN funcionario f ON f.id = e.id_funcionario
@@ -26,27 +26,26 @@ class MovimentacaoRepository {
         LEFT JOIN funcionario f ON f.id = a.id_funcionario
       ) historico
       ORDER BY data_movimentacao DESC, referencia_id DESC
-      LIMIT 500
+      ${Number.isInteger(limite) && limite > 0 ? "LIMIT ?" : ""}
     `;
-    const [rows] = await db.execute(query);
+    const parametros = Number.isInteger(limite) && limite > 0 ? [limite] : [];
+    const [rows] = await db.execute(query, parametros);
     return rows;
   }
 
-  // Busca movimentação
   async buscarPorId(id) {
     const [rows] = await db.execute(
       "SELECT id_movimentacao, id_saida, id_entrada, id_ajuste FROM movimentacao WHERE id_movimentacao = ?",
       [id],
     );
     if (!rows.length) {
-      const erro = new Error("Registro de movimentação não encontrado.");
-      erro.status = 404;
-      throw erro;
+      throw Object.assign(new Error("Registro de movimentação não encontrado."), {
+        status: 404,
+      });
     }
     return rows[0];
   }
 
-  // Cria movimentação
   async cadastrar(dados) {
     const [resultado] = await db.execute(
       "INSERT INTO movimentacao (id_saida, id_entrada, id_ajuste) VALUES (?, ?, ?)",
@@ -55,30 +54,30 @@ class MovimentacaoRepository {
     return { id_movimentacao: resultado.insertId, ...dados };
   }
 
-  // Atualiza movimentação
   async atualizar(id, dados) {
     const [resultado] = await db.execute(
       "UPDATE movimentacao SET id_saida = ?, id_entrada = ?, id_ajuste = ? WHERE id_movimentacao = ?",
       [dados.id_saida || null, dados.id_entrada || null, dados.id_ajuste || null, id],
     );
     if (!resultado.affectedRows) {
-      const erro = new Error("Registro de movimentação não encontrado para atualização.");
-      erro.status = 404;
-      throw erro;
+      throw Object.assign(
+        new Error("Registro de movimentação não encontrado para atualização."),
+        { status: 404 },
+      );
     }
     return { id_movimentacao: Number(id), ...dados };
   }
 
-  // Exclui movimentação
   async deletar(id) {
     const [resultado] = await db.execute(
       "DELETE FROM movimentacao WHERE id_movimentacao = ?",
       [id],
     );
     if (!resultado.affectedRows) {
-      const erro = new Error("Registro de movimentação não encontrado para exclusão.");
-      erro.status = 404;
-      throw erro;
+      throw Object.assign(
+        new Error("Registro de movimentação não encontrado para exclusão."),
+        { status: 404 },
+      );
     }
     return { id_movimentacao: Number(id) };
   }

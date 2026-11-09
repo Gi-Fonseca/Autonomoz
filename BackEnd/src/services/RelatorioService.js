@@ -1,13 +1,31 @@
 const RelatorioRepository = require("../repositories/RelatorioRepository");
 
 class RelatorioService {
-  async estoque() {
-    const relatorio = await RelatorioRepository.estoque();
+  async gerar(tipo) {
+    const dados = await RelatorioRepository[tipo]();
     return {
       sucesso: true,
-      gerado_em: new Date().toISOString(),
-      dados: relatorio,
+      dados: {
+        ...dados,
+        gerado_em: new Date().toISOString(),
+      },
     };
+  }
+
+  async estoque() {
+    return this.gerar("estoque");
+  }
+
+  async entradas() {
+    return this.gerar("entradas");
+  }
+
+  async saidas() {
+    return this.gerar("saidas");
+  }
+
+  async movimentacoes() {
+    return this.gerar("movimentacoes");
   }
 }
 

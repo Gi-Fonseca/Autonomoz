@@ -1,48 +1,97 @@
-const EntradaService = require("../services/EntradaService");
+const EntradaRepository = require("../repositories/EntradaRepository");
+
+function erroHttp(erro, res) {
+  return res.status(erro.status || 500).json({
+    sucesso: false,
+    mensagem: erro.mensagem || erro.message || "Erro ao processar a entrada.",
+  });
+}
+
+function validarMotivo(valor) {
+  const motivo = typeof valor === "string" ? valor.trim() : "";
+  if (!motivo) {
+    throw Object.assign(new Error("O motivo da entrada é obrigatório."), {
+      status: 400,
+    });
+  }
+  if (motivo.length > 255) {
+    throw Object.assign(
+      new Error("O motivo da entrada deve ter no máximo 255 caracteres."),
+      { status: 400 },
+    );
+  }
+  return motivo;
+}
+
+function validarInteiroPositivo(valor, nome) {
+  const numero = Number(valor);
+  if (!Number.isInteger(numero) || numero <= 0) {
+    throw Object.assign(new Error(`${nome} deve ser um inteiro maior que zero.`), {
+      status: 400,
+    });
+  }
+  return numero;
+}
 
 class EntradaController {
   async listar(req, res) {
     try {
-      return res.json({ sucesso: true, dados: await EntradaService.listar() });
+      const dados = await EntradaRepository.listar();
+      return res.status(200).json({ sucesso: true, dados, total: dados.length });
     } catch (erro) {
-      console.error("[ENTRADA] Erro ao listar:", erro);
-      return res.status(erro.status || 500).json({ sucesso: false, mensagem: erro.mensagem || erro.message || "Erro ao carregar entradas" });
+      return erroHttp(erro, res);
     }
   }
 
   async buscarPorId(req, res) {
     try {
-      return res.json({ sucesso: true, dados: await EntradaService.buscarPorId(req.params.id) });
+      const dados = await EntradaRepository.buscarPorId(req.params.id);
+      return res.status(200).json({ sucesso: true, dados });
     } catch (erro) {
-      return res.status(erro.status || 500).json({ sucesso: false, mensagem: erro.mensagem || erro.message || "Erro ao buscar entrada" });
+      return erroHttp(erro, res);
     }
   }
 
   async cadastrar(req, res) {
     try {
-      if (!req.body || Object.keys(req.body).length === 0) {
-        return res.status(400).json({ sucesso: false, mensagem: "Informe os dados da entrada." });
-      }
+      const corpo = req.body || {};
       const dados = {
-        ...req.body,
+        ...corpo,
+        id_produto: validarInteiroPositivo(corpo.id_produto, "Produto"),
         id_funcionario: req.usuario.id,
-        data_entrada: req.body.data_entrada || new Date(),
-        fornecedor: String(req.body.fornecedor || "Não informado").trim(),
+        quantidade: validarInteiroPositivo(corpo.quantidade, "Quantidade"),
+        data_entrada: corpo.data_entrada || new Date(),
+        valor_compra: Number(corpo.valor_compra || 0),
+        nf: corpo.nf || null,
+        fornecedor: corpo.fornecedor || null,
+        motivo_entrada: validarMotivo(corpo.motivo_entrada),
       };
-      const resultado = await EntradaService.cadastrar(dados);
-      return res.status(201).json({ sucesso: true, mensagem: "Entrada registrada com sucesso", dados: resultado });
+      const dadosCriados = await EntradaRepository.cadastrar(dados);
+      return res.status(201).json({
+        sucesso: true,
+        mensagem: "Entrada registrada com sucesso.",
+        dados: dadosCriados,
+      });
     } catch (erro) {
-      console.error("[ENTRADA] Erro ao cadastrar:", erro);
-      return res.status(erro.status || 500).json({ sucesso: false, mensagem: erro.mensagem || erro.message || "Erro ao registrar entrada" });
+      return erroHttp(erro, res);
     }
   }
 
   async atualizar(req, res) {
     try {
-      const dados = { ...(req.body || {}), id_funcionario: req.usuario.id };
-      return res.json({ sucesso: true, mensagem: "Entrada atualizada com sucesso", dados: await EntradaService.atualizar(req.params.id, dados) });
+      const corpo = { ...(req.body || {}) };
+      if (Object.hasOwn(corpo, "motivo_entrada")) {
+        corpo.motivo_entrada = validarMotivo(corpo.motivo_entrada);
+      }
+      delete corpo.id_funcionario;
+      const dados = await EntradaRepository.atualizar(req.params.id, corpo);
+      return res.status(200).json({
+        sucesso: true,
+        mensagem: "Entrada atualizada com sucesso.",
+        dados,
+      });
     } catch (erro) {
-      return res.status(erro.status || 500).json({ sucesso: false, mensagem: erro.mensagem || erro.message || "Erro ao atualizar entrada" });
+      return erroHttp(erro, res);
     }
   }
 }

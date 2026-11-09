@@ -142,8 +142,15 @@ class ProdutoService {
   // Atualiza produto
   async alterarDados(id, dados = {}) {
     if (!id || isNaN(id)) throw { status: 400, mensagem: "ID inválido" };
-    if (!(await ProdutoRepository.buscarProdutoId(id)))
+    const atual = await ProdutoRepository.buscarProdutoId(id);
+    if (!atual)
       throw { status: 404, mensagem: "Produto não encontrado" };
+    const motivo = String(dados.motivo_ajuste || "").trim();
+    if (!motivo) throw { status: 400, mensagem: "O motivo do ajuste é obrigatório." };
+    if (motivo.length > 255) throw { status: 400, mensagem: "O motivo deve ter no máximo 255 caracteres." };
+    const id_funcionario = Number(dados.id_funcionario);
+    if (!Number.isInteger(id_funcionario) || id_funcionario <= 0)
+      throw { status: 400, mensagem: "Não foi possível identificar o responsável pelo ajuste." };
     const permitido = {};
     // Filtra campos permitidos
     const campos = [
@@ -163,6 +170,28 @@ class ProdutoService {
     ];
     for (const campo of campos)
       if (dados[campo] !== undefined) permitido[campo] = dados[campo];
+    permitido.id_funcionario = id_funcionario;
+    permitido.motivo_ajuste = motivo;
+    if (dados.categoria !== undefined) {
+      const nomeCategoria = String(dados.categoria || "").trim();
+      if (!nomeCategoria) throw { status: 400, mensagem: "A categoria é obrigatória." };
+      const categorias = await CategoriaRepository.listarCategoria();
+      let categoria = categorias.find(
+        (item) => String(item.tipo_produto).trim().toLowerCase() === nomeCategoria.toLowerCase(),
+      );
+      if (!categoria) {
+        const idCategoria = await CategoriaRepository.publicarCategoria({ tipo_produto: nomeCategoria });
+        categoria = { id_categoria: idCategoria, tipo_produto: nomeCategoria };
+      }
+      const tipoProduto = String(permitido.tipo_item || atual.tipo_item || "PECA").toUpperCase();
+      const nomeNormalizado = String(categoria.tipo_produto || "").toLowerCase();
+      const categoriaVeiculo = nomeNormalizado.includes("veicul");
+      const categoriaPeca = nomeNormalizado.includes("pec") || nomeNormalizado.includes("peç");
+      if ((categoriaVeiculo && tipoProduto !== "VEICULO") || (categoriaPeca && tipoProduto !== "PECA")) {
+        throw { status: 400, mensagem: "A categoria precisa corresponder ao tipo escolhido." };
+      }
+      permitido.id_categoria = Number(categoria.id_categoria);
+    }
     if (permitido.nome !== undefined)
       permitido.nome = String(permitido.nome).trim();
     if (permitido.placa !== undefined && permitido.placa !== null)
@@ -186,7 +215,7 @@ class ProdutoService {
     await ProdutoRepository.alterarDados(id, permitido);
     return {
       sucesso: true,
-      mensagem: "Produto atualizado com sucesso",
+      mensagem: "Cadastro ajustado com sucesso; motivo registrado no histórico.",
       dados: { id_produto: Number(id), ...permitido },
     };
   }

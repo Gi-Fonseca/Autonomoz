@@ -8,7 +8,7 @@ class AjusteController {
   async listar(req, res) {
     try {
       const resultado = await AjusteService.listar();
-      return res.status(200).json({ sucesso: true, dados: resultado });
+      return res.status(200).json(resultado);
     } catch (erro) {
       return res
         .status(erro.status || 500)
@@ -20,7 +20,7 @@ class AjusteController {
   async buscarPorId(req, res) {
     try {
       const resultado = await AjusteService.buscarPorId(req.params.id);
-      return res.status(200).json({ sucesso: true, dados: resultado });
+      return res.status(200).json(resultado);
     } catch (erro) {
       return res
         .status(erro.status || 500)
@@ -44,8 +44,19 @@ class AjusteController {
         });
       }
 
+      if (
+        Object.hasOwn(dadosAjuste, "foto") &&
+        dadosAjuste.foto !== null &&
+        !dadosAjuste.fotoBase64
+      ) {
+        return res.status(400).json({
+          sucesso: false,
+          mensagem: "Envie a foto como fotoBase64 ou solicite a remoção da foto atual.",
+        });
+      }
+
       // Tratamento de foto Base64
-      if (!dadosAjuste.foto && dadosAjuste.fotoBase64) {
+      if (dadosAjuste.fotoBase64) {
         const uploadDir = path.join(__dirname, "..", "..", "uploads");
 
         if (!fs.existsSync(uploadDir)) {
@@ -69,11 +80,7 @@ class AjusteController {
       }
 
       const resultado = await AjusteService.criar(dadosAjuste);
-      return res.status(201).json({
-        sucesso: true,
-        mensagem: "Ajuste registrado com sucesso!",
-        dados: resultado,
-      });
+      return res.status(201).json(resultado);
     } catch (erro) {
       return res
         .status(erro.status || 500)
@@ -86,7 +93,18 @@ class AjusteController {
     try {
       const dadosAjuste = req.body || {};
 
-      if (!dadosAjuste.foto && dadosAjuste.fotoBase64) {
+      if (
+        Object.hasOwn(dadosAjuste, "foto") &&
+        dadosAjuste.foto !== null &&
+        !dadosAjuste.fotoBase64
+      ) {
+        return res.status(400).json({
+          sucesso: false,
+          mensagem: "Envie a nova foto como fotoBase64 ou remova a foto atual.",
+        });
+      }
+
+      if (dadosAjuste.fotoBase64) {
         const uploadDir = path.join(__dirname, "..", "..", "uploads");
 
         if (!fs.existsSync(uploadDir)) {
@@ -113,11 +131,7 @@ class AjusteController {
         req.params.id,
         dadosAjuste,
       );
-      return res.status(200).json({
-        sucesso: true,
-        mensagem: "Ajuste atualizado com sucesso!",
-        dados: resultado,
-      });
+      return res.status(200).json(resultado);
     } catch (erro) {
       return res
         .status(erro.status || 500)
