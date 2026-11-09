@@ -1,34 +1,23 @@
 // Configuração central da API e da autenticação.
-// O backend serve o frontend pela mesma origem. Quando a tela é aberta pelo
-// Live Server/Vite, usamos a API local explicitamente para evitar Failed to fetch.
+// Se o frontend for aberto pelo backend, usa a mesma origem.
+// Se for aberto pelo Live Server, Vite ou arquivo local, usa o backend local na porta 3000.
 const API_URL = (() => {
-  const configurada = String(window.AUTONOMOZ_API_URL || "")
-    .trim()
-    .replace(/\/$/, "");
-  if (configurada) return configurada;
-
-  const { protocol, hostname, port, origin } = window.location;
-  const servidorDeArquivos = protocol === "file:";
-  const servidorDeFrontend = ["5500", "5501", "5173", "4173", "8080"].includes(
-    port,
-  );
-
-  if (servidorDeArquivos || servidorDeFrontend) {
-    return `${protocol === "https:" ? "https" : "http"}://${hostname || "localhost"}:3000`;
-  }
-
-  return origin;
+  const configurada = window.localStorage.getItem("autonomoz_api_url");
+  if (configurada) return configurada.replace(/\/$/, "");
+  if (window.location.protocol === "http:" && window.location.port === "3000")
+    return window.location.origin;
+  if (window.location.protocol === "https:" && window.location.port !== "")
+    return window.location.origin;
+  return "http://localhost:3000";
 })();
 
 function salvarSessaoJWT(token, usuario) {
   localStorage.setItem("autonomoz_jwt", token);
   localStorage.setItem("autonomoz_usuario", JSON.stringify(usuario));
 }
-
 function obterTokenJWT() {
   return localStorage.getItem("autonomoz_jwt");
 }
-
 function obterUsuarioLogado() {
   const usuario = localStorage.getItem("autonomoz_usuario");
   try {
@@ -37,11 +26,9 @@ function obterUsuarioLogado() {
     return null;
   }
 }
-
 function verificarAutenticacao() {
   if (!obterTokenJWT()) window.location.href = "login.html";
 }
-
 function fazerLogout() {
   localStorage.removeItem("autonomoz_jwt");
   localStorage.removeItem("autonomoz_usuario");
@@ -51,26 +38,26 @@ function fazerLogout() {
 async function fetchAutenticado(endpoint, opcoes = {}) {
   const token = obterTokenJWT();
   const rota = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const url = `${API_URL}${rota}`;
   const headers = {
     Accept: "application/json",
     ...(opcoes.body ? { "Content-Type": "application/json" } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(opcoes.headers || {}),
   };
-
-  try {
-    const resposta = await fetch(`${API_URL}${rota}`, { ...opcoes, headers });
-    if (resposta.status === 401 || resposta.status === 403) {
-      fazerLogout();
-      return null;
-    }
-    return resposta;
-  } catch (erro) {
-    console.error(`Erro ao conectar ao backend em ${API_URL}${rota}:`, erro);
-    throw erro;
+  const resposta = await fetch(url, { ...opcoes, headers });
+  if (resposta.status === 401 || resposta.status === 403) {
+    fazerLogout();
+    return null;
   }
+  const contentType = resposta.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error(
+      `A API não retornou JSON em ${rota}. Backend esperado: ${API_URL}. Inicie o backend na porta 3000.`,
+    );
+  }
+  return resposta;
 }
-
 const apiFetch = fetchAutenticado;
 
 function mostrarAviso(mensagem, tipo = "erro", duracao = 4500) {
@@ -98,7 +85,6 @@ function mostrarAviso(mensagem, tipo = "erro", duracao = 4500) {
   clearTimeout(aviso._timer);
   aviso._timer = setTimeout(() => aviso.classList.remove("visivel"), duracao);
 }
-
 function formatarMoeda(valor) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -110,7 +96,7 @@ function formatarData(dataIso) {
   try {
     if (typeof dataIso === "string") {
       const mysql = dataIso.match(
-        /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?)?$/,
+        /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?$/,
       );
       if (mysql) {
         const [, ano, mes, dia, hora = "00", minuto = "00"] = mysql;

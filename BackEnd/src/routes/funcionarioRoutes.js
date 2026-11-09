@@ -4,8 +4,9 @@ const controller = require("../controllers/FuncionarioController");
 const { autenticar, autorizar } = require("../middlewares/auth");
 
 router.post("/login", controller.login);
-router.post("/solicitar-reset", controller.solicitarReset);
+// O reset valida e-mail + CPF + nova senha antes de alterar o hash.
 router.post("/resetar-senha", controller.resetarSenha);
+
 router.use(autenticar);
 router.get("/", controller.listar);
 router.get("/:id", controller.buscarPorId);
