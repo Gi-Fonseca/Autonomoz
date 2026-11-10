@@ -1,10 +1,287 @@
+:root {
+    --primary-color: #C0001A;
+    --primary-hover: #9e0015;
+    --primary-light: #c0001a14;
+    --bg-light: #f8f9fa;
+    --text-dark: #212529;
+    --text-muted: #495057;
+    --white: #ffffff;
+    --border-color: #dee2e6;
+    --radius: 8px;
+}
 
+body {
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    min-height: 100vh; /* Significa 100 viewport height (100% da altura da tela ou da janela visível do navegador)*/
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
 
-/* Logo AutoNoMoz compartilhada entre login e cadastro */
-.form-logo {
-    display: block;
-    width: min(100%, 320px);
-    height: auto;
-    margin: 0 auto 10px;
-    object-fit: contain;
+/*Container do Formulário */
+.form-div {
+    background-color: var(--white);
+    width: 100%;
+    max-width: 440px;
+    padding: 40px 32px;
+    border-radius: calc(var(--radius) * 1.5); /*• calc(...): É uma função nativa do CSS que permite realizar cálculos matemáticos diretamente nas folhas de estilo (adição, subtração, multiplicação e divisão).
+
+    • var(--radius): É uma variável CSS (também chamada de propriedade personalizada). Ela busca um valor que já foi definido anteriormente no código (por exemplo, --radius: 8px;).
+
+    • * 1.5: É o operador de multiplicação. Ele pega o valor guardado na variável --radius e o multiplica por 1,5.
+*/
+    box-shadow: 0 10px 25px;
+    border: 1px solid var(--border-color);
+}
+
+/* Cabeçalho */
+.form-header {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.form-header h2 {
+    color: var(--primary-color);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.5; /* define o espaço entre caracteres, ajustando a legibilidade e a estética do texto.*/
+    margin-bottom: 4px;
+}
+
+.subtitulo {
+    color: var(--text-muted);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-weight: 500;
+}
+
+/* Corpo do Formulário */
+.form-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px,
+}
+
+.form-btns p {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+/* Seletor de Perfil (Gerente / Estoquista) */
+.form-btns__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap:12px
+}
+
+.form-btns__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background-color: var(--white);
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.form-bts__btn i {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.form-btns__btn p {
+    margin: 0;
+    color: inherit;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.form-btns__btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background-color: var(--primary-color);
+}
+
+/* Campos de Entrada */
+.form-forms__group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-forms__label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.form-forms__label {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.form-forms__reset-link {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--primary-color);
+    cursor: pointer;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.form-forms__reset-link:hover {
+    text-decoration: underline;
+    color: var(--primary-color);
+}
+
+.form-forms__input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.form-forms__icon {
+    position: absolute;
+    left: 14px;
+    color: var(--text-muted);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    pointer-events: none;
+    transition: var(--transition);
+}
+
+.form-forms__icon--toggle {
+    left: auto;
+    right: 14px;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.form-forms__icon--toggle:hover {
+    color: var(--primary-color);
+}
+
+.form-forms__input {
+    width: 100%;
+    padding: 12px 14px 12px 40px;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--text-dark);
+    background-color: var(--white);
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius);
+    outline: none;
+    transition: var(--transition);
+}
+
+.form-forms__input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px var(--primary-light);
+}
+
+.form-forms__input:focus + .form-forms__icon,
+.form-forms__input-wrapper:focus-within .form-forms__icon:not(.form-forms__icon--toggle) {
+    color: var(--primary-color); /* :focus do CSS é aplicada quando um elemento recebe foco, o que pode ocorrer quando o usuário seleciona o elemento*/
+}
+
+/* Botão Principal */
+.form-body__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 14px;
+    margin-top: 8px;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+/* Estado selecionado */
+.form-btns__btn.active {
+    border-color: var(--primary-color);
+    background-color: var(--primary-color);
+    color: var(--white);
+}
+
+.form-btns__btn.active p,
+.form-btns__btn.active i {
+    color: var(--white);
+}
+
+/* Link Inferior */
+.registro-link {
+    text-align: center;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-top: 4px;
+    transition: var(--transition);
+}
+
+.registro-link:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+.autonomoz-aviso {
+    position: fixed;
+    z-index: 9999;
+    top: 24px;
+    right: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: min(390px, calc(100vw - 32px));
+    padding: 14px 16px;
+    border: 1px solid transparent;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(31, 41, 55, 0.18);
+    color: #fff;
+    font: 600 0.92rem/1.35 'Inter', system-ui, sans-serif;
+    opacity: 0;
+    transform: translateY(-12px);
+    pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+}
+
+.autonomoz-aviso.visivel {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.autonomoz-aviso-sucesso { background: #16835b; }
+.autonomoz-aviso-erro { background: #c0001a; }
+.autonomoz-aviso-aviso { background: #b96b00; }
+.autonomoz-aviso-info { background: #3f4f68; }
+.autonomoz-aviso-icone {
+    display: grid;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    font-weight: 800;
+}
+.autonomoz-aviso-texto { flex: 1; }
+.autonomoz-aviso-fechar {
+    padding: 0 2px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
 }
