@@ -10,6 +10,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 let categoriasDisponiveis = [];
 let produtoOriginal = null;
 
+function converterValorMonetario(valor) {
+  if (valor === null || valor === undefined || valor === "") return 0;
+  const texto = String(valor).trim().replace(/\s/g, "");
+  const normalizado = texto.includes(",")
+    ? texto.replace(/\./g, "").replace(",", ".")
+    : texto;
+  const numero = Number(normalizado);
+  return Number.isFinite(numero) && numero >= 0 ? numero : 0;
+}
+
 async function lerDadosResposta(resposta) {
   const resultado = await resposta.json();
 
@@ -156,8 +166,8 @@ function configurarFormularioProduto() {
       ano: document.getElementById("prod-ano")?.value
         ? Number(document.getElementById("prod-ano").value)
         : null,
-      preco_custo: Number(document.getElementById("prod-preco-custo")?.value || 0),
-      preco_venda: Number(document.getElementById("prod-preco-venda")?.value || 0),
+      preco_custo: converterValorMonetario(document.getElementById("prod-preco-custo")?.value),
+      preco_venda: converterValorMonetario(document.getElementById("prod-preco-venda")?.value),
       ...(fotoBase64 ? { fotoBase64 } : {}),
       status: produtoOriginal ? Boolean(produtoOriginal.status) : true,
     };

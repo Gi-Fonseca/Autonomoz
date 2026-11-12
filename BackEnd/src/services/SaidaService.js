@@ -73,6 +73,28 @@ class SaidaService {
     }
     return await SaidaRepository.deletar(id);
   }
+
+  async cancelar(id, id_funcionario, dados) {
+    if (!id || isNaN(id)) {
+      const erro = new Error("ID de saída inválido.");
+      erro.status = 400;
+      throw erro;
+    }
+    const motivo = typeof dados?.motivo_cancelamento === "string"
+      ? dados.motivo_cancelamento.trim()
+      : "";
+    if (!motivo) {
+      const erro = new Error("Informe o motivo do cancelamento.");
+      erro.status = 400;
+      throw erro;
+    }
+    if (motivo.length > 255) {
+      const erro = new Error("O motivo do cancelamento deve ter no máximo 255 caracteres.");
+      erro.status = 400;
+      throw erro;
+    }
+    return SaidaRepository.cancelar(id, id_funcionario, motivo);
+  }
 }
 
 module.exports = new SaidaService();

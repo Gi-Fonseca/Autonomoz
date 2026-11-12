@@ -63,9 +63,15 @@ class RelatorioRepository {
              s.quantidade,
              COALESCE(NULLIF(TRIM(s.cliente_nome), ''), NULLIF(TRIM(s.cliente), ''), NULLIF(TRIM(c.nome), ''), 'Não venda') AS cliente_nome,
              COALESCE(NULLIF(TRIM(s.cliente_cnpj), ''), NULLIF(TRIM(c.cadastro), '')) AS cliente_cnpj,
-             s.valor_venda,
+             CASE WHEN (s.cliente_nome IS NOT NULL OR s.cliente_cnpj IS NOT NULL OR s.cliente IS NOT NULL)
+                  THEN COALESCE(s.valor_venda, p.preco_venda)
+                  ELSE s.valor_venda END AS valor_venda,
+             s.cancelada,
+             s.cancelada_em,
+             s.motivo_cancelamento,
              f.nome AS funcionario_nome,
-             COALESCE(NULLIF(TRIM(s.motivo_saida), ''), 'Não informado') AS motivo
+             CASE WHEN s.cancelada THEN CONCAT('Cancelada: ', COALESCE(NULLIF(TRIM(s.motivo_cancelamento), ''), 'sem motivo'))
+                  ELSE COALESCE(NULLIF(TRIM(s.motivo_saida), ''), 'Não informado') END AS motivo
       FROM saida_produto s
       LEFT JOIN produtos p ON p.id_produto = s.id_produto
       LEFT JOIN funcionario f ON f.id = s.id_funcionario
@@ -74,8 +80,11 @@ class RelatorioRepository {
     `);
     return {
       resumo: {
-        total_registros: itens.length,
-        total_unidades: totalizarQuantidade(itens),
+        total_registros: itens.filter((item) => !item.cancelada).length,
+        total_unidades: totalizarQuantidade(itens.filter((item) => !item.cancelada)),
+        total_vendido: itens
+          .filter((item) => !item.cancelada)
+          .reduce((total, item) => total + Number(item.valor_venda || 0) * Number(item.quantidade || 0), 0),
       },
       itens,
     };

@@ -86,10 +86,17 @@ function mostrarAviso(mensagem, tipo = "erro", duracao = 4500) {
   aviso._timer = setTimeout(() => aviso.classList.remove("visivel"), duracao);
 }
 function formatarMoeda(valor) {
+  if (valor === null || valor === undefined || valor === "") return "R$ 0,00";
+  const texto = String(valor).trim().replace(/\s/g, "");
+  const normalizado = texto.includes(",")
+    ? texto.replace(/\./g, "").replace(",", ".")
+    : texto;
+  const numero = Number(normalizado);
+  if (!Number.isFinite(numero)) return "R$ 0,00";
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-  }).format(valor || 0);
+  }).format(numero);
 }
 function formatarData(dataIso) {
   if (!dataIso) return "-";

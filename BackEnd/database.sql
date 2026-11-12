@@ -84,11 +84,17 @@ CREATE TABLE IF NOT EXISTS saida_produto (
     id_funcionario INT NOT NULL,
     id_cliente INT NULL,
     cliente VARCHAR(255) NULL,
+    cliente_nome VARCHAR(180) NULL,
+    cliente_cnpj VARCHAR(18) NULL,
     quantidade INT NOT NULL,
     data_saida DATETIME NOT NULL,
     motivo_saida VARCHAR(255) NULL,
     valor_venda DECIMAL(10,2) NULL,
     nf VARCHAR(255) NULL,
+    cancelada BOOLEAN NOT NULL DEFAULT FALSE,
+    cancelada_em DATETIME NULL,
+    cancelada_por INT NULL,
+    motivo_cancelamento VARCHAR(255) NULL,
     CHECK (quantidade > 0),
     CHECK (valor_venda IS NULL OR valor_venda >= 0),
     FOREIGN KEY (id_produto) REFERENCES produtos(id_produto),
@@ -140,142 +146,103 @@ CREATE TABLE IF NOT EXISTS estoque (
     FOREIGN KEY (id_saida) REFERENCES saida_produto(id_saida)
 );
 
-DROP PROCEDURE IF EXISTS migrar_autonomoz_existente;
+-- =========================================================
+-- MIGRAÇÃO SEGURA PARA BANCOS ANTIGOS
+-- =========================================================
+
+DROP PROCEDURE IF EXISTS atualizar_schema_autonomoz;
 DELIMITER $$
-CREATE PROCEDURE migrar_autonomoz_existente()
+CREATE PROCEDURE atualizar_schema_autonomoz()
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'descricao'
-    ) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'descricao') THEN
         ALTER TABLE produtos ADD COLUMN descricao TEXT NULL AFTER nome;
     END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'tipo_item'
-    ) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'tipo_item') THEN
         ALTER TABLE produtos ADD COLUMN tipo_item ENUM('PECA', 'VEICULO') NOT NULL DEFAULT 'PECA' AFTER descricao;
     END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'estoque_minimo'
-    ) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'estoque_minimo') THEN
         ALTER TABLE produtos ADD COLUMN estoque_minimo INT NOT NULL DEFAULT 0 AFTER quantidade;
     END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'chassi'
-    ) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'chassi') THEN
         ALTER TABLE produtos ADD COLUMN chassi VARCHAR(50) NULL AFTER status;
     END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'placa'
-    ) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'placa') THEN
         ALTER TABLE produtos ADD COLUMN placa VARCHAR(10) NULL AFTER chassi;
     END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'ano'
-    ) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'ano') THEN
         ALTER TABLE produtos ADD COLUMN ano SMALLINT NULL AFTER placa;
     END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'foto'
-    ) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'foto') THEN
         ALTER TABLE produtos ADD COLUMN foto VARCHAR(255) NULL AFTER ano;
     END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'preco_custo'
-    ) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'preco_custo') THEN
         ALTER TABLE produtos ADD COLUMN preco_custo DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER foto;
     END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'preco_venda'
-    ) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'preco_venda') THEN
         ALTER TABLE produtos ADD COLUMN preco_venda DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER preco_custo;
     END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'entrada_produto' AND COLUMN_NAME = 'motivo_entrada'
-    ) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'entrada_produto' AND COLUMN_NAME = 'motivo_entrada') THEN
         ALTER TABLE entrada_produto ADD COLUMN motivo_entrada VARCHAR(255) NULL AFTER fornecedor;
     END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ajuste_produto' AND COLUMN_NAME = 'quantidade'
-    ) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ajuste_produto' AND COLUMN_NAME = 'quantidade') THEN
         ALTER TABLE ajuste_produto ADD COLUMN quantidade INT NOT NULL DEFAULT 0 AFTER id_funcionario;
     END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ajuste_produto' AND COLUMN_NAME = 'foto'
-    ) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ajuste_produto' AND COLUMN_NAME = 'foto') THEN
         ALTER TABLE ajuste_produto ADD COLUMN foto VARCHAR(255) NULL AFTER motivo_ajuste;
     END IF;
-
-    IF EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saida_produto'
-          AND COLUMN_NAME = 'id_cliente' AND IS_NULLABLE = 'NO'
-    ) THEN
+    IF EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saida_produto' AND COLUMN_NAME = 'id_cliente' AND IS_NULLABLE = 'NO') THEN
         ALTER TABLE saida_produto MODIFY id_cliente INT NULL;
     END IF;
-
     ALTER TABLE saida_produto MODIFY motivo_saida VARCHAR(255) NULL;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saida_produto' AND COLUMN_NAME = 'cliente'
-    ) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saida_produto' AND COLUMN_NAME = 'cliente') THEN
         ALTER TABLE saida_produto ADD COLUMN cliente VARCHAR(255) NULL AFTER id_cliente;
     END IF;
-
-    IF EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'entrada_produto'
-          AND COLUMN_NAME = 'data_entrada' AND DATA_TYPE = 'date'
-    ) THEN
-        ALTER TABLE entrada_produto MODIFY data_entrada DATETIME NOT NULL;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saida_produto' AND COLUMN_NAME = 'cliente_nome') THEN
+        ALTER TABLE saida_produto ADD COLUMN cliente_nome VARCHAR(180) NULL AFTER cliente;
     END IF;
-
-    IF EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saida_produto'
-          AND COLUMN_NAME = 'data_saida' AND DATA_TYPE = 'date'
-    ) THEN
-        ALTER TABLE saida_produto MODIFY data_saida DATETIME NOT NULL;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saida_produto' AND COLUMN_NAME = 'cliente_cnpj') THEN
+        ALTER TABLE saida_produto ADD COLUMN cliente_cnpj VARCHAR(18) NULL AFTER cliente_nome;
     END IF;
-
-    IF EXISTS (
-        SELECT 1 FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ajuste_produto'
-          AND COLUMN_NAME = 'data_ajuste' AND DATA_TYPE = 'date'
-    ) THEN
-        ALTER TABLE ajuste_produto MODIFY data_ajuste DATETIME NOT NULL;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saida_produto' AND COLUMN_NAME = 'cancelada') THEN
+        ALTER TABLE saida_produto ADD COLUMN cancelada BOOLEAN NOT NULL DEFAULT FALSE AFTER nf;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saida_produto' AND COLUMN_NAME = 'cancelada_em') THEN
+        ALTER TABLE saida_produto ADD COLUMN cancelada_em DATETIME NULL AFTER cancelada;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saida_produto' AND COLUMN_NAME = 'cancelada_por') THEN
+        ALTER TABLE saida_produto ADD COLUMN cancelada_por INT NULL AFTER cancelada_em;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saida_produto' AND COLUMN_NAME = 'motivo_cancelamento') THEN
+        ALTER TABLE saida_produto ADD COLUMN motivo_cancelamento VARCHAR(255) NULL AFTER cancelada_por;
+    END IF;
+    ALTER TABLE entrada_produto MODIFY data_entrada DATETIME NOT NULL;
+    ALTER TABLE saida_produto MODIFY data_saida DATETIME NOT NULL;
+    ALTER TABLE ajuste_produto MODIFY data_ajuste DATETIME NOT NULL;
 END$$
 DELIMITER ;
 
-CALL migrar_autonomoz_existente();
-DROP PROCEDURE IF EXISTS migrar_autonomoz_existente;
+CALL atualizar_schema_autonomoz();
+DROP PROCEDURE IF EXISTS atualizar_schema_autonomoz;
 
--- Os três comandos abaixo deixam explícita a alteração de data solicitada.
--- Se a coluna já estiver como DATETIME, eles continuam seguros no MySQL.
+-- Índices usados pelo inventário e pelos alertas.
+SET @sql = (SELECT IF(COUNT(*) = 0, 'CREATE INDEX idx_produtos_tipo_item ON produtos (tipo_item)', 'SELECT 1') FROM information_schema.statistics WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND INDEX_NAME = 'idx_produtos_tipo_item');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (SELECT IF(COUNT(*) = 0, 'CREATE INDEX idx_produtos_estoque_minimo ON produtos (quantidade, estoque_minimo)', 'SELECT 1') FROM information_schema.statistics WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND INDEX_NAME = 'idx_produtos_estoque_minimo');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Usuário inicial somente se ainda não existir.
+INSERT INTO funcionario (cargo, nome, cpf, email, senha)
+SELECT 'Gerente', 'Administrador', '11111111111', 'admin@autonomoz.com',
+       '$2b$12$sCdwkGzaqblYH9kH2.Jo3.uZ8DsLXZue50ZhEz0/0ETWoUEVbfI06'
+WHERE NOT EXISTS (SELECT 1 FROM funcionario WHERE email = 'admin@autonomoz.com');
+
+-- Garantia explícita das datas com horário.
+-- Mantém os valores existentes e apenas amplia DATE para DATETIME.
 ALTER TABLE entrada_produto
 MODIFY data_entrada DATETIME NOT NULL;
 
@@ -284,58 +251,3 @@ MODIFY data_saida DATETIME NOT NULL;
 
 ALTER TABLE ajuste_produto
 MODIFY data_ajuste DATETIME NOT NULL;
-
-
-SET @existe_cliente := (
-  SELECT COUNT(*)
-  FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'saida_produto'
-    AND COLUMN_NAME = 'cliente'
-);
-SET @comando_cliente := IF(
-  @existe_cliente = 0,
-  'ALTER TABLE saida_produto ADD COLUMN cliente VARCHAR(255) NULL',
-  'SELECT 1'
-);
-PREPARE comando_cliente FROM @comando_cliente;
-EXECUTE comando_cliente;
-DEALLOCATE PREPARE comando_cliente;
-
-SET @existe_nome := (
-  SELECT COUNT(*)
-  FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'saida_produto'
-    AND COLUMN_NAME = 'cliente_nome'
-);
-SET @comando_nome := IF(
-  @existe_nome = 0,
-  'ALTER TABLE saida_produto ADD COLUMN cliente_nome VARCHAR(180) NULL',
-  'SELECT 1'
-);
-PREPARE comando_nome FROM @comando_nome;
-EXECUTE comando_nome;
-DEALLOCATE PREPARE comando_nome;
-
-SET @existe_cnpj := (
-  SELECT COUNT(*)
-  FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'saida_produto'
-    AND COLUMN_NAME = 'cliente_cnpj'
-);
-SET @comando_cnpj := IF(
-  @existe_cnpj = 0,
-  'ALTER TABLE saida_produto ADD COLUMN cliente_cnpj VARCHAR(18) NULL',
-  'SELECT 1'
-);
-PREPARE comando_cnpj FROM @comando_cnpj;
-EXECUTE comando_cnpj;
-DEALLOCATE PREPARE comando_cnpj;
-
-SELECT COLUMN_NAME, COLUMN_TYPE
-FROM information_schema.COLUMNS
-WHERE TABLE_SCHEMA = DATABASE()
-  AND TABLE_NAME = 'saida_produto'
-  AND COLUMN_NAME IN ('cliente', 'cliente_nome', 'cliente_cnpj');

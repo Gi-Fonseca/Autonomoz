@@ -49,6 +49,23 @@ class SaidaRepository {
     try {
       await connection.beginTransaction();
 
+      const [produtos] = await connection.execute(
+        "SELECT preco_venda FROM produtos WHERE id_produto = ? FOR UPDATE",
+        [id_produto],
+      );
+      if (!produtos.length) {
+        const erro = new Error("Produto não encontrado.");
+        erro.status = 404;
+        throw erro;
+      }
+      const eVenda = dados.finalidade === "VENDA" || Boolean(cliente_nome || cliente_cnpj || cliente);
+      const valorDigitado = dados.valor_venda === "" || dados.valor_venda === null || dados.valor_venda === undefined
+        ? null
+        : Number(String(dados.valor_venda).replace(",", "."));
+      const valorVendaCadastrado = eVenda
+        ? (Number.isFinite(valorDigitado) && valorDigitado >= 0 ? valorDigitado : produtos[0].preco_venda)
+        : null;
+
       // 1. Cadastra a saída na tabela
       const querySaida = `
                 INSERT INTO saida_produto (id_produto, id_funcionario, id_cliente, cliente, cliente_nome, cliente_cnpj, quantidade, data_saida, motivo_saida, valor_venda, nf)
@@ -64,7 +81,7 @@ class SaidaRepository {
         quantidade,
         dados.data_saida || new Date(),
         motivo_saida,
-        valor_venda || null,
+        valorVendaCadastrado,
         nf || null,
       ]);
 
@@ -88,7 +105,7 @@ class SaidaRepository {
 
       await connection.commit();
 
-      return { id_saida: resSaida.insertId, ...dados };
+      return { id_saida: resSaida.insertId, ...dados, valor_venda: valorVendaCadastrado };
     } catch (error) {
       await connection.rollback();
       throw error;
@@ -195,6 +212,53 @@ class SaidaRepository {
 
       await connection.commit();
       return { id_saida: Number(id_saida) };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  async cancelar(id_saida, id_funcionario, motivo_cancelamento) {
+    const connection = await db.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [saidas] = await connection.execute(
+        "SELECT * FROM saida_produto WHERE id_saida = ? FOR UPDATE",
+        [id_saida],
+      );
+      if (!saidas.length) {
+        const erro = new Error("Registro de saída não encontrado.");
+        erro.status = 404;
+        throw erro;
+      }
+      const saida = saidas[0];
+      if (Number(saida.cancelada) === 1) {
+        const erro = new Error("Esta saída já foi cancelada.");
+        erro.status = 409;
+        throw erro;
+      }
+
+      await connection.execute(
+        "UPDATE produtos SET quantidade = quantidade + ? WHERE id_produto = ?",
+        [saida.quantidade, saida.id_produto],
+      );
+      const [ajuste] = await connection.execute(
+        `INSERT INTO ajuste_produto
+         (id_produto, id_funcionario, quantidade, data_ajuste, motivo_ajuste, foto)
+         VALUES (?, ?, ?, NOW(), ?, NULL)`,
+        [saida.id_produto, id_funcionario, saida.quantidade, motivo_cancelamento],
+      );
+      await connection.execute("INSERT INTO movimentacao (id_ajuste) VALUES (?)", [ajuste.insertId]);
+      await connection.execute(
+        `UPDATE saida_produto
+         SET cancelada = TRUE, cancelada_em = NOW(), cancelada_por = ?, motivo_cancelamento = ?
+         WHERE id_saida = ?`,
+        [id_funcionario, motivo_cancelamento, id_saida],
+      );
+      await connection.commit();
+      return { id_saida: Number(id_saida), id_ajuste_estorno: ajuste.insertId, cancelada: true };
     } catch (error) {
       await connection.rollback();
       throw error;

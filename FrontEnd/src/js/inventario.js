@@ -54,6 +54,24 @@ function configurarAcessibilidadeModalMovimentacao() {
   });
 }
 
+function normalizarValorProduto(valor) {
+  if (valor === null || valor === undefined || valor === "") return null;
+  if (typeof valor === "number") return Number.isFinite(valor) ? valor : null;
+  const texto = String(valor).trim().replace(/\s/g, "");
+  const normalizado = texto.includes(",")
+    ? texto.replace(/\./g, "").replace(",", ".")
+    : texto;
+  const numero = Number(normalizado);
+  return Number.isFinite(numero) ? numero : null;
+}
+
+function formatarValorProduto(valor) {
+  const numero = normalizarValorProduto(valor);
+  return numero === null
+    ? ""
+    : numero.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 async function lerResposta(resposta) {
   let resultado = await resposta.json();
   if (!resposta.ok || resultado.sucesso === false) {
@@ -333,7 +351,13 @@ function abrirModalMov(id, nome, tipo) {
   document.getElementById("mov-finalidade").value = "NAO_VENDA";
   document.getElementById("mov-cliente-nome").value = "";
   document.getElementById("mov-cliente-cnpj").value = "";
-  document.getElementById("mov-valor-venda").value = "";
+  const produto = (window.produtosInventario || []).find(
+    (item) => Number(item.id_produto ?? item.id) === Number(id),
+  );
+  const precoVenda = normalizarValorProduto(produto?.preco_venda);
+  const campoValorVenda = document.getElementById("mov-valor-venda");
+  campoValorVenda.value = precoVenda === null ? "" : String(precoVenda);
+  campoValorVenda.dataset.valorNumerico = precoVenda === null ? "" : String(precoVenda);
   configurarClienteMovimentacao();
   document.getElementById("mov-qtd").value = 1;
   document.getElementById("mov-obs").value = "";
@@ -367,8 +391,8 @@ async function confirmarMovimentacao() {
   const eVenda = tipo === "SAIDA" && finalidade === "VENDA";
   const clienteNome = document.getElementById("mov-cliente-nome")?.value.trim();
   const clienteCnpj = document.getElementById("mov-cliente-cnpj")?.value.trim();
-  const valorVendaCampo = document.getElementById("mov-valor-venda")?.value;
-  const valorVenda = valorVendaCampo === "" || valorVendaCampo == null ? null : Number(valorVendaCampo);
+  const valorVendaCampo = document.getElementById("mov-valor-venda");
+  const valorVenda = normalizarValorProduto(valorVendaCampo?.value);
   const campoMotivo = document.getElementById("mov-obs");
   const observacao = campoMotivo.value.trim();
   if (
@@ -392,14 +416,15 @@ async function confirmarMovimentacao() {
     return;
   }
   if (eVenda && (valorVenda === null || !Number.isFinite(valorVenda) || valorVenda < 0)) {
-    mostrarAviso("Informe um valor de venda válido.", "aviso");
-    document.getElementById("mov-valor-venda")?.focus();
+    mostrarAviso("Informe um preço de venda válido.", "aviso");
+    valorVendaCampo?.focus();
     return;
   }
   const payload = {
     id_produto: Number(produtoId),
     quantidade,
     valor_compra: 0,
+    finalidade,
   };
   if (eVenda && clienteNome && clienteCnpj) {
     payload.cliente = `${clienteNome} — CNPJ ${clienteCnpj}`;

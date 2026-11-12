@@ -154,6 +154,26 @@ class SaidaController {
       });
     }
   }
+
+  async cancelar(req, res) {
+    try {
+      const resultado = await SaidaService.cancelar(
+        req.params.id,
+        req.usuario.id,
+        req.body || {},
+      );
+      return res.status(200).json({
+        sucesso: true,
+        mensagem: "Saída cancelada e estoque estornado com sucesso!",
+        dados: resultado,
+      });
+    } catch (erro) {
+      return res.status(erro.status || 500).json({
+        sucesso: false,
+        mensagem: erro.mensagem || erro.message || "Erro ao cancelar saída",
+      });
+    }
+  }
 }
 
 module.exports = new SaidaController();

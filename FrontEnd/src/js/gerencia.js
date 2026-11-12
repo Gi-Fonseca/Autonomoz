@@ -83,6 +83,8 @@ const TIPOS_RELATORIO = {
       { titulo: "Valor de venda", valor: (item) => formatarMoeda(item.valor_venda) },
       { titulo: "Responsável", valor: (item) => item.funcionario_nome || "-" },
       { titulo: "Motivo", valor: (item) => item.motivo || "Não informado" },
+      { titulo: "Status", valor: (item) => Number(item.cancelada) === 1 ? "Cancelada / estornada" : "Ativa" },
+      { titulo: "Ação", html: true, valor: (item) => Number(item.cancelada) === 1 ? "—" : `<button class="btn btn-sm btn-outline-danger" type="button" onclick="abrirModalCancelamento(${Number(item.id)})"><i class="bi bi-arrow-counterclockwise me-1"></i>Estornar</button>` },
     ],
   },
 };
@@ -310,6 +312,9 @@ function renderizarResumo(tipo, resumo, itens) {
       ["Lançamentos", resumo.total_registros ?? itens.length],
       ["Unidades", resumo.total_unidades ?? itens.reduce((total, item) => total + Number(item.quantidade || 0), 0)],
     ];
+    if (tipo === "saidas") {
+      metricas.push(["Total vendido", formatarMoeda(resumo.total_vendido || 0)]);
+    }
   }
   elemento.innerHTML = metricas
     .map(
@@ -325,6 +330,42 @@ function contarTipo(itens, tipo) {
   ).length;
 }
 
+function abrirModalCancelamento(id) {
+  let modal = document.getElementById("modal-cancelamento-saida");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "modal-cancelamento-saida";
+    modal.className = "position-fixed top-0 start-0 w-100 h-100 d-none";
+    modal.style.cssText = "z-index:2000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:1rem";
+    modal.innerHTML = `<div class="bg-white rounded-4 shadow p-4" style="width:min(440px,100%)"><h5 class="fw-bold">Estornar saída</h5><p class="text-muted small">O estoque será devolvido e a saída permanecerá no histórico como cancelada.</p><textarea id="motivo-cancelamento-saida" class="form-control mb-3" maxlength="255" rows="3" placeholder="Motivo obrigatório"></textarea><div class="d-flex justify-content-end gap-2"><button type="button" class="btn btn-light" onclick="fecharModalCancelamento()">Voltar</button><button type="button" class="btn btn-danger" onclick="confirmarCancelamentoSaida()">Confirmar estorno</button></div></div>`;
+    document.body.appendChild(modal);
+  }
+  modal.dataset.idSaida = String(id);
+  modal.classList.remove("d-none");
+  document.getElementById("motivo-cancelamento-saida").value = "";
+  document.getElementById("motivo-cancelamento-saida").focus();
+}
+
+function fecharModalCancelamento() {
+  document.getElementById("modal-cancelamento-saida")?.classList.add("d-none");
+}
+
+async function confirmarCancelamentoSaida() {
+  const modal = document.getElementById("modal-cancelamento-saida");
+  const motivo = document.getElementById("motivo-cancelamento-saida")?.value.trim();
+  if (!motivo) return mostrarMensagem("Informe o motivo do estorno.", "warning");
+  try {
+    const resposta = await fetchAutenticado(`/saida/${modal.dataset.idSaida}/cancelar`, { method: "POST", body: JSON.stringify({ motivo_cancelamento: motivo }) });
+    const resultado = await resposta.json();
+    if (!resposta.ok || resultado.sucesso === false) throw new Error(resultado.mensagem || "Não foi possível estornar a saída.");
+    fecharModalCancelamento();
+    mostrarMensagem("Saída estornada e estoque devolvido com sucesso.", "success");
+    await carregarRelatorio("saidas");
+  } catch (erro) {
+    mostrarMensagem(erro.message || "Não foi possível estornar a saída.", "danger");
+  }
+}
+
 function renderizarTabelaRelatorio(configuracao, itens) {
   const tabela = document.getElementById("tabela-relatorio");
   if (!tabela) return;
@@ -335,7 +376,7 @@ function renderizarTabelaRelatorio(configuracao, itens) {
             `<tr>${configuracao.colunas
               .map((coluna) => {
                 const valor = coluna.valor(item);
-                return `<td>${escapar(valor === undefined || valor === null || valor === "" ? "-" : valor)}</td>`;
+                return `<td>${coluna.html ? valor : escapar(valor === undefined || valor === null || valor === "" ? "-" : valor)}</td>`;
               })
               .join("")}</tr>`,
         )
