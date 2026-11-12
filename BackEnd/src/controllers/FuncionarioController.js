@@ -56,7 +56,7 @@ class FuncionarioController {
   }
 
   async deletar(req, res) {
-    try { return res.json(await FuncionarioService.deletar(req.params.id)); }
+    try { return res.json(await FuncionarioService.deletar(req.params.id, req.usuario.id)); }
     catch (erro) { return res.status(erro.status || 500).json({ sucesso: false, mensagem: erro.mensagem || erro.message || "Erro ao deletar funcionário" }); }
   }
 }

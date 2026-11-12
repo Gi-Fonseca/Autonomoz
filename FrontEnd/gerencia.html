@@ -100,15 +100,22 @@
         </section>
 
         <div class="card border-0 shadow-sm p-4">
-          <h5 class="fw-bold">Funcionários</h5>
-          <p class="text-muted small">O cadastro de funcionários fica disponível somente dentro da área de Gerência.</p>
-          <a href="cadastro.html" class="btn btn-outline-danger btn-sm align-self-start">Cadastrar funcionário</a>
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+            <div><h5 class="fw-bold mb-1">Funcionários e perfis</h5><p class="text-muted small mb-0">Visualize os usuários cadastrados e remova acessos quando necessário.</p></div>
+            <a href="cadastro.html" class="btn btn-outline-danger btn-sm">Cadastrar funcionário</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light"><tr><th>Nome</th><th>E-mail</th><th>Cargo</th><th>CPF</th><th class="text-end">Ação</th></tr></thead>
+              <tbody id="tabela-funcionarios"><tr><td colspan="5" class="text-center text-muted py-3">Carregando perfis...</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </main>
   </div>
   <script src="src/js/config.js?v=20261112-preco-definitivo"></script>
-  <script src="src/js/gerencia.js?v=20261112-preco-definitivo"></script>
+  <script src="src/js/gerencia.js?v=20261112-perfis-funcionarios"></script>
   <script src="src/js/menu.js"></script>
 </body>
 </html>

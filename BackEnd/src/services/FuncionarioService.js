@@ -114,10 +114,19 @@ class FuncionarioService {
       dados: { id: Number(id), ...n, senha: undefined },
     };
   }
-  async deletar(id) {
+  async deletar(id, solicitanteId) {
     idValido(id);
+    if (Number(id) === Number(solicitanteId)) {
+      throw { status: 400, mensagem: "Você não pode excluir o próprio usuário." };
+    }
     if (!(await FuncionarioRepository.findById(id)))
       throw { status: 404, mensagem: "Funcionário não encontrado" };
+    const usuarios = await FuncionarioRepository.findAll();
+    const gerentes = usuarios.filter((usuario) => String(usuario.cargo).toLowerCase() === "gerente");
+    const alvo = usuarios.find((usuario) => Number(usuario.id) === Number(id));
+    if (String(alvo?.cargo).toLowerCase() === "gerente" && gerentes.length <= 1) {
+      throw { status: 400, mensagem: "O último gerente não pode ser excluído." };
+    }
     await FuncionarioRepository.delete(id);
     return {
       sucesso: true,

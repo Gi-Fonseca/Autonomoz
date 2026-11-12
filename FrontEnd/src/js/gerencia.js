@@ -122,7 +122,64 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
   await carregarRelatorio("estoque");
+  await carregarFuncionarios();
 });
+
+async function carregarFuncionarios() {
+  const tabela = document.getElementById("tabela-funcionarios");
+  if (!tabela) return;
+  try {
+    const resposta = await fetchAutenticado("/funcionario");
+    const resultado = await resposta.json();
+    if (!resposta.ok || resultado.sucesso === false) throw new Error(resultado.mensagem || "Não foi possível carregar os perfis.");
+    const usuarios = Array.isArray(resultado.dados) ? resultado.dados : [];
+    const usuarioAtual = obterUsuarioLogado();
+    tabela.innerHTML = usuarios.length ? usuarios.map((usuario) => {
+      const proprio = Number(usuario.id) === Number(usuarioAtual?.id);
+      const cargo = String(usuario.cargo || "");
+      return `<tr><td class="fw-semibold">${escapar(usuario.nome)}</td><td>${escapar(usuario.email)}</td><td><span class="badge ${cargo.toLowerCase() === "gerente" ? "text-bg-danger" : "text-bg-secondary"}">${escapar(cargo)}</span></td><td>${escapar(usuario.cpf || "-")}</td><td class="text-end">${proprio ? '<span class="text-muted small">Usuário atual</span>' : `<button type="button" class="btn btn-sm btn-outline-danger" onclick="abrirExclusaoFuncionario(${Number(usuario.id)}, '${escaparTextoGerencia(usuario.nome)}')"><i class="bi bi-trash me-1"></i>Excluir</button>`}</td></tr>`;
+    }).join("") : '<tr><td colspan="5" class="text-center text-muted py-3">Nenhum funcionário cadastrado.</td></tr>';
+  } catch (erro) {
+    tabela.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-3">${escapar(erro.message || "Erro ao carregar perfis.")}</td></tr>`;
+  }
+}
+
+function escaparTextoGerencia(valor) {
+  return String(valor || "").replace(/[\\']/g, "\\$&");
+}
+
+function abrirExclusaoFuncionario(id, nome) {
+  let modal = document.getElementById("modal-exclusao-funcionario");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "modal-exclusao-funcionario";
+    modal.className = "position-fixed top-0 start-0 w-100 h-100 d-none";
+    modal.style.cssText = "z-index:2000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:1rem";
+    modal.innerHTML = `<div class="bg-white rounded-4 shadow p-4" style="width:min(430px,100%)"><h5 class="fw-bold">Excluir usuário?</h5><p id="nome-exclusao-funcionario" class="text-muted"></p><p class="small text-danger">Essa ação remove o acesso ao sistema. Registros históricos desse funcionário serão preservados.</p><div class="d-flex justify-content-end gap-2"><button type="button" class="btn btn-light" onclick="fecharExclusaoFuncionario()">Cancelar</button><button type="button" class="btn btn-danger" onclick="confirmarExclusaoFuncionario()">Excluir usuário</button></div></div>`;
+    document.body.appendChild(modal);
+  }
+  modal.dataset.id = String(id);
+  document.getElementById("nome-exclusao-funcionario").textContent = `Usuário selecionado: ${nome}`;
+  modal.classList.remove("d-none");
+}
+
+function fecharExclusaoFuncionario() {
+  document.getElementById("modal-exclusao-funcionario")?.classList.add("d-none");
+}
+
+async function confirmarExclusaoFuncionario() {
+  const modal = document.getElementById("modal-exclusao-funcionario");
+  try {
+    const resposta = await fetchAutenticado(`/funcionario/${modal.dataset.id}`, { method: "DELETE" });
+    const resultado = await resposta.json();
+    if (!resposta.ok || resultado.sucesso === false) throw new Error(resultado.mensagem || "Não foi possível excluir o usuário.");
+    fecharExclusaoFuncionario();
+    mostrarMensagem("Usuário excluído com sucesso.", "success");
+    await carregarFuncionarios();
+  } catch (erro) {
+    mostrarMensagem(erro.message || "Não foi possível excluir o usuário.", "danger");
+  }
+}
 
 async function carregarRelatorio(tipo = tipoRelatorioAtual) {
   const configuracao = TIPOS_RELATORIO[tipo];
