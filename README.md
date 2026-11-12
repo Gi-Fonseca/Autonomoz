@@ -1,316 +1,287 @@
-# 🚘 Autonomoz - Sistema de Gerenciamento de Estoque
+AutoNoMoz — Gestão de frota e estoque
 
-O **Autonomoz** é uma plataforma focada no gerenciamento e controle de estoque de veículos e peças automotivas. O sistema atende ao controle de entrada, saída, movimentação e acesso de usuários pelos níveis **Estoquista** e **Gerente**.
+O AutoNoMoz é uma aplicação web para acompanhar produtos, peças e veículos, registrar entradas e saídas de estoque e consultar movimentações. O sistema tem usuários nos perfis Gerente e Estoquista, autenticação por JWT e relatórios disponíveis na área de Gerência.
 
----
+Este README descreve o código presente no repositório. Ele diferencia as telas disponíveis no navegador das rotas existentes somente na API.
 
-## 🛠️ Tecnologias Utilizadas
+Tecnologias
 
-### **Back-End (API REST)**
+•
+Backend: Node.js, Express 5, MySQL, mysql2, JWT, bcryptjs, dotenv e CORS.
 
-- **Node.js / Express**: construção das rotas RESTful e regras de negócio.
+•
+Frontend: HTML, CSS, JavaScript, Bootstrap 5 e Fetch API.
 
-- **MySQL**: banco de dados relacional.
+•
+Documentação da API: Swagger UI em /api-docs.
 
-- **JWT**: autenticação dos usuários.
+•
+Requisito de runtime: Node.js 18 ou superior.
 
-- **Bcrypt**: proteção das senhas armazenadas.
+O que está disponível na interface
 
-- **Base URL Local**: `http://localhost:3000`
+•
+Login: e-mail, senha e seleção do perfil Gerente ou Estoquista. O perfil escolhido precisa corresponder ao cargo associado à conta.
 
-### **Front-End**
+•
+Painel: apresenta indicadores de veículos, itens, alertas de estoque e saídas. O índice do painel usa o total de quantidades de saída retornadas dividido pelas unidades atualmente cadastradas; não é uma métrica de valor monetário nem um índice limitado aos últimos 30 dias.
 
-- **HTML, CSS, JavaScript e Bootstrap 5**
+•
+Inventário: lista produtos e veículos, permite pesquisar e abrir detalhes, mostra foto e dados cadastrados e apresenta ações para registrar Entrada, Saída ou abrir Ajustes.
 
-- **Fetch API** para consumo do backend
+•
+Cadastro e ajustes de produto: o formulário permite cadastrar um produto ou veículo e, ao abrir um item existente pela ação Ajustes, corrigir o cadastro completo com motivo obrigatório. O ajuste é registrado no histórico. O formulário contempla nome, descrição, tipo, categoria, fornecedor, quantidade, estoque mínimo, foto e, para veículos, chassi, placa e ano.
 
-### **Gestão do Projeto**
+•
+Movimentação rápida: no inventário, Entrada e Saída pedem quantidade e motivo obrigatório. O motivo tem limite de 255 caracteres.
 
-- **Trello**: organização ágil da equipe e controle de *dailys*.
+•
+Fornecedores: a tela lista, cadastra, edita e exclui fornecedores.
 
----
+•
+Movimentações: tela de consulta do histórico, com data, produto, tipo, quantidade, responsável e motivo. A tela não oferece edição ou exclusão direta de registros do histórico.
 
-## 🗄️ Entidades do Sistema
+•
+Gerência: área restrita ao perfil Gerente, com relatórios de Estoque, Movimentações, Entradas e Saídas; mostra resumos e tabelas e permite atualizar, exportar CSV, exportar um documento Word compatível (.doc) e imprimir pelo navegador. A exportação .doc é HTML compatível com Word; não é um arquivo .docx.
 
-- **Funcionário**: cadastro e autenticação de usuários (id, cargo, nome, cpf, email e senha ).
+•
+Tema: há alternância entre aparência clara e escura; a preferência é mantida no navegador.
 
-- **Cliente**: destino das saídas de estoque (id_cliente, nome, email e cadastro).
+O cadastro de funcionários é disponibilizado dentro da área de Gerência. A interface permite cadastrar funcionário; as rotas de consulta, alteração e exclusão descritas adiante existem na API, mas não há telas de gerenciamento dessas operações.
 
-- **Categoria**: classificação dos produtos (id_categoria e tipo_produto).
+Cliente e fornecedor
 
-- **Fornecedor**: empresas que fornecem peças e veículos.
+Fornecedor representa a origem de itens recebidos e possui uma tela de gerenciamento. Cliente representa, na API, um destinatário externo opcional de uma saída — por exemplo, uma pessoa ou empresa que recebe um item. Por isso, Cliente é conceitualmente ligado a saídas, enquanto Fornecedor é ligado a entradas.
 
-- **Produto**: itens comercializados, com quantidade, validade, categoria, fornecedor e status.
+A API inclui cadastro, consulta, alteração e exclusão de clientes, e a saída aceita uma associação opcional a um cliente. Não há tela de gerenciamento ou seletor de cliente na interface atual. O relatório de saídas apresenta o identificador (id_cliente), não o nome do cliente. As saídas podem ser registradas sem cliente.
 
-- **Entrada_produto**: registro de compras e recebimentos com histórico fiscal.
+Regras de movimentação
 
-- **Saida_produto**: registro de vendas, perdas, devoluções ou transferências.
+•
+Uma entrada aumenta a quantidade do produto em estoque.
 
-- **Ajuste_produto**: registro de ajustes de mercadoria, como quebra, troca ou defeito.
+•
+Uma saída reduz a quantidade e o backend recusa o lançamento quando não há saldo suficiente.
 
-- **Movimentação**: registro centralizado de entradas, saídas e ajustes.
+•
+Um ajuste aceita quantidade positiva ou negativa; o backend impede que o saldo fique negativo. Na interface, a ação Ajustes abre a correção do cadastro do produto e exige motivo.
 
-- **Lote**: agrupamento da quantidade de produtos recebidos.
+•
+Os motivos de entrada, saída e ajuste são obrigatórios no respectivo lançamento da API e têm limite de 255 caracteres.
 
-- **Estoque**: posição física acumulada, valor unitário e localização.
+•
+A tela de movimentações apresenta o histórico consolidado; ela não é uma tela de edição das entradas e saídas.
 
----
+API REST
 
-## 🔐 Autenticação
+Os endpoints de negócio abaixo exigem Authorization: Bearer <token>, exceto POST /funcionario/login. A documentação interativa da API fica em http://localhost:3000/api-docs quando o servidor está em execução.
 
-A API utiliza **JWT (JSON Web Token)**.
+Autenticação
 
-A rota de login é:
+POST /funcionario/login recebe email, senha e cargo (Gerente ou Estoquista). O backend confere se o cargo selecionado corresponde ao cargo da conta e retorna token JWT e dados públicos do usuário. O token deve ser enviado nas outras requisições no cabeçalho:
 
-```
-POST /funcionario/login
-```
+Plain Text
 
-Exemplo de corpo:
 
-```json
-{
-  "email": "email@exemplo.com",
-  "senha": "sua_senha"
-}
-```
-
-Após o login, a API retorna um token. Esse token deve ser enviado nas outras requisições usando o cabeçalho:
-
-```
 Authorization: Bearer SEU_TOKEN
-```
 
-A palavra correta é **`Bearer`** e o nome correto do cabeçalho é **`Authorization`**.
 
-Exemplo:
 
-```bash
-curl http://localhost:3000/produto/ \
-  -H "Authorization: Bearer SEU_TOKEN"
-```
+Rotas
 
-O login é público. As demais rotas exigem um token JWT válido. As operações de cadastro, alteração e exclusão de funcionários são permitidas somente para usuários com cargo **Gerente**.
+Recurso
+Métodos disponíveis
+Funcionário
+POST /funcionario/login (público); com token: GET /funcionario/, GET /funcionario/:id; somente Gerente: POST /funcionario/, PUT /funcionario/:id, DELETE /funcionario/:id
+Produto
+GET /produto/, GET /produto/:id, GET /produto/alertas, POST /produto/, PUT /produto/:id
+Entrada
+GET /entrada/, GET /entrada/:id, POST /entrada/, PUT /entrada/:id; DELETE /entrada/:id responde 405
+Saída
+GET /saida/, GET /saida/:id, POST /saida/, PUT /saida/:id; DELETE /saida/:id responde 405
+Ajuste
+GET /ajuste/, GET /ajuste/:id, POST /ajuste/, PUT /ajuste/:id; não há rota DELETE
+Movimentação
+GET /movimentacao/, GET /movimentacao/:id, POST /movimentacao/, PUT /movimentacao/:id; DELETE /movimentacao/:id responde 405
+Fornecedor
+GET /fornecedor/, GET /fornecedor/:id, POST /fornecedor/, PUT /fornecedor/:id, DELETE /fornecedor/:id
+Cliente
+GET /cliente/, GET /cliente/:id, POST /cliente/, PUT /cliente/:id, DELETE /cliente/:id
+Categoria
+GET /categoria/, GET /categoria/:id, POST /categoria/, PUT /categoria/:id, DELETE /categoria/:id
+Estoque
+GET /estoque/, GET /estoque/:id, POST /estoque/, PUT /estoque/:id; DELETE /estoque/:id responde 405
+Lote
+GET /lote/, GET /lote/:id, POST /lote/, PUT /lote/:id
+Relatórios
+somente Gerente: GET /relatorios/estoque, /relatorios/movimentacoes, /relatorios/entradas, /relatorios/saidas
 
----
 
-## 🔌 Rotas da API REST
 
-Todas as rotas abaixo exigem autenticação, exceto `POST /funcionario/login`.
 
-### Funcionário
+A presença de uma rota nesta tabela descreve a API; não implica a existência de uma tela para aquela operação. Nas rotas de produto, fornecedor, cliente, categoria, estoque e lote, o roteamento exige autenticação JWT, mas não aplica uma restrição de cargo adicional. A autorização específica de Gerente está aplicada às operações de escrita de funcionário e aos relatórios.
 
-```
-POST   /funcionario/login
-GET    /funcionario/
-POST   /funcionario/          (Gerente )
-GET    /funcionario/{id}
-PUT    /funcionario/{id}      (Gerente)
-DELETE /funcionario/{id}      (Gerente)
-```
+GET /movimentacao/ retorna o histórico consolidado das tabelas de entrada, saída e ajuste, ordenado por data e limitado a 500 registros. GET /movimentacao/:id, POST /movimentacao/ e PUT /movimentacao/:id tratam os vínculos registrados na tabela movimentacao; não substituem os lançamentos próprios de entrada, saída ou ajuste e não atualizam o estoque por si mesmos.
 
-### Produto
+Limitações relevantes da API e da interface
 
-```
-GET    /produto/
-POST   /produto/
-GET    /produto/{id}
-PUT    /produto/{id}
-```
+•
+O formulário de produto exibe campos de SKU e preço de custo/venda, mas o script atual não os envia para persistência. Não conte com esses campos como dados salvos.
 
-### Entrada
+•
+A tela de movimentação rápida oferece Entrada e Saída; não solicita cliente, nota fiscal, preço ou tipo comercial de saída. Esses dados não são coletados nesse formulário.
 
-```
-GET    /entrada/
-POST   /entrada/
-GET    /entrada/{id}
-PUT    /entrada/{id}
-DELETE /entrada/{id}           (retorna 405 com mensagem)
-```
+•
+A API oferece PUT de entrada e saída, mas essas rotas não reconciliam de forma confiável o saldo de estoque em todas as alterações. A tela de histórico não oferece esses botões de edição; a ação visível para corrigir cadastro de produto é Ajustes.
 
-### Saída
+•
+O relatório de estoque detalha produtos ativos e inativos, enquanto o resumo SQL usa filtro de produtos ativos. Por isso, os totais do resumo e da tabela podem não coincidir quando há itens inativos.
 
-```
-GET    /saida/
-POST   /saida/
-GET    /saida/{id}
-PUT    /saida/{id}
-DELETE /saida/{id}             (retorna 405 com mensagem)
-```
+•
+O cartão do Inventário rotulado “Valor em estoque” exibe a soma de unidades, não um valor em dinheiro.
 
-### Movimentação
+•
+O botão “Resetar Chave” aparece no login, mas não há fluxo de recuperação de senha implementado nos scripts atuais.
 
-```
-GET    /movimentacao/
-POST   /movimentacao/
-GET    /movimentacao/{id}
-PUT    /movimentacao/{id}
-DELETE /movimentacao/{id}      (retorna 405 com mensagem)
-```
+•
+Não há testes automatizados configurados. O comando npm test termina com a mensagem “no test specified”.
 
-### Categoria
+Imagens
 
-```
-GET    /categoria/
-POST   /categoria/
-GET    /categoria/{id}
-PUT    /categoria/{id}
-DELETE /categoria/{id}
-```
+O backend recebe imagens em Base64 nos fluxos que as suportam, grava os arquivos em BackEnd/uploads/ e os serve em /uploads/nome-do-arquivo. O cadastro/ajuste de produto oferece seleção e prévia de foto. Os arquivos enviados ficam no disco local do servidor; cuide de cópias de segurança e não inclua imagens privadas no Git.
 
-### Estoque
+Instalação e execução
 
-```
-GET    /estoque/
-POST   /estoque/
-GET    /estoque/{id}
-PUT    /estoque/{id}
-DELETE /estoque/{id}           (retorna 405 com mensagem)
-```
+Pré-requisitos
 
-### Cliente
+•
+Node.js 18 ou superior e npm.
 
-```
-GET    /cliente/
-POST   /cliente/
-GET    /cliente/{id}
-PUT    /cliente/{id}
-DELETE /cliente/{id}
-```
+•
+MySQL em execução.
 
-### Fornecedor
+•
+Um schema-base do AutoNoMoz já criado, com as tabelas usadas pelo projeto.
 
-```
-GET    /fornecedor/
-POST   /fornecedor/
-GET    /fornecedor/{id}
-PUT    /fornecedor/{id}
-DELETE /fornecedor/{id}
-```
 
-### Ajuste
+Importante sobre o banco: BackEnd/database.sql cria/seleciona o banco autonomoz_db e aplica alterações condicionais, índices e um cadastro inicial se as tabelas correspondentes já existirem. Ele não contém o CREATE TABLE completo do sistema. Portanto, sozinho, não instala o projeto em um MySQL vazio. É necessário obter/criar o schema-base compatível antes de executar o script.
 
-```
-GET    /ajuste/
-POST   /ajuste/
-GET    /ajuste/{id}
-PUT    /ajuste/{id}
-```
+Dependências
 
-### Lote
+Na pasta BackEnd, instale as dependências:
 
-```
-GET    /lote/
-POST   /lote/
-GET    /lote/{id}
-PUT    /lote/{id}
-```
+Bash
 
----
 
-## 🧾 Regras de exclusão
-
-A exclusão física é bloqueada para registros que fazem parte do histórico operacional:
-
-- Entradas;
-
-- Saídas;
-
-- Movimentações;
-
-- Estoque.
-
-Nessas rotas, o `DELETE` retorna:
-
-```
-405 Method Not Allowed
-```
-
-com uma mensagem explicando que o registro não pode ser apagado. Correções devem ser feitas por atualização permitida ou por um novo ajuste.
-
-Produtos, ajustes e lotes também não possuem rota `DELETE` implementada.
-
----
-
-## 🖼️ Upload de imagem
-
-O backend possui suporte para receber imagens em Base64 em funcionalidades que utilizam foto. Os arquivos são salvos na pasta `BackEnd/uploads/` e podem ser acessados pela rota estática:
-
-```
-/uploads/nome-do-arquivo.extensão
-```
-
-O upload de foto diretamente no cadastro de produto ainda não faz parte do fluxo principal de produtos.
-
----
-
-## 🚀 Como Executar o Projeto
-
-### 1. Instalar as dependências
-
-```bash
 cd BackEnd
 npm install
-```
 
-### 2. Criar o banco de dados
 
-Execute o arquivo `BackEnd/database.sql` no MySQL:
 
-```bash
-mysql -u root -p < database.sql
-```
+Banco de dados
 
-### 3. Configurar o ambiente
+Com o schema-base compatível já carregado, execute o script a partir da raiz do repositório:
 
-Copie o arquivo de exemplo:
+Bash
 
-```bash
-cp .env.example .env
-```
 
-Depois preencha o `.env` com os dados do MySQL e do JWT:
+mysql -u root -p < BackEnd/database.sql
 
-```
+
+
+O script inclui um usuário Gerente inicial apenas se ainda não houver conta com o mesmo e-mail. A credencial de demonstração está comentada no próprio SQL; altere-a antes de disponibilizar o sistema em qualquer ambiente compartilhado.
+
+Variáveis de ambiente
+
+O repositório não inclui .env.example. Crie manualmente BackEnd/.env e preencha os valores de acordo com sua instalação. Exemplo para uso local:
+
+Plain Text
+
+
 PORT=3000
 DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
-DB_PASSWORD=sua_senha_do_mysql
+DB_PASSWORD=sua_senha_mysql
 DB_NAME=autonomoz_db
-JWT_SECRET=seu_segredo_jwt
+DB_TIMEZONE=-03:00
+JWT_SECRET=troque_por_um_segredo_aleatorio_longo
 JWT_EXPIRES_IN=8h
-CORS_ORIGINS=http://localhost:5500,http://127.0.0.1:5500
-```
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 
-### 4. Iniciar o servidor
 
-Para iniciar normalmente:
 
-```bash
+JWT_SECRET deve ser definido para assinar e validar os tokens. PORT, configurações do banco, fuso horário e tempo do token possuem valores padrão no código, mas configure-os explicitamente para seu ambiente. Quando CORS_ORIGINS contém uma lista, separe as origens por vírgulas e use a origem exata, incluindo protocolo e porta. Para acesso na rede local, inclua também a origem usada pelo navegador, por exemplo http://192.168.0.147:3000. No código atual, se CORS_ORIGINS ficar vazio, o servidor permite qualquer origem; para ambientes compartilhados, configure a lista explicitamente.
+
+O arquivo .env é ignorado pelo Git. Não publique senhas do banco nem o JWT_SECRET.
+
+Iniciar
+
+Ainda dentro da pasta BackEnd:
+
+Bash
+
+
 npm start
-```
 
-Para iniciar com reinicialização automática durante o desenvolvimento:
 
-```bash
+
+Durante desenvolvimento, pode-se usar:
+
+Bash
+
+
 npm run dev
-```
 
-A API ficará disponível em:
 
-```
-http://localhost:3000
-```
 
----
+O servidor Express atende a API e também serve os arquivos estáticos de FrontEnd/ na mesma porta. Com a configuração padrão, abra:
 
-## 🔌 Integrantes do Grupo
+Plain Text
 
-- Giovana Lays Coelho Fonseca
 
-- Letícia Roberta Oliveira Souto
+http://localhost:3000/login.html
 
-- Rafael Teixeira
 
-- Victória Marques
+
+O backend aceita JSON e formulários URL-encoded até 16 MB para suportar imagens codificadas em Base64. A aplicação não depende de um servidor frontend separado quando é aberta por essa URL.
+
+Estrutura principal
+
+Plain Text
+
+
+BackEnd/
+  database.sql                 Migrações e seed; não é schema completo
+  package.json                 Dependências e comandos Node.js
+  src/
+    app.js                     Middleware, arquivos estáticos, rotas e Swagger
+    server.js                  Inicialização do servidor
+    config/                    Conexão MySQL
+    controllers/               Tratamento HTTP
+    middlewares/               Autenticação JWT e autorização
+    repositories/               Consultas e persistência MySQL
+    routes/                    Rotas da API
+    services/                  Validação e regras de negócio
+    utils/                     Uploads e tratamento de erros
+FrontEnd/
+  *.html                       Páginas do sistema
+  src/css/                     Estilos
+  src/js/ e src/scripts/        Lógica da interface e chamadas à API
+
+
+
+Equipe
+
+•
+Giovana Lays Coelho Fonseca
+
+•
+Letícia Roberta Oliveira Souto
+
+•
+Rafael Teixeira
+
+•
+Victória Marques
+
