@@ -112,34 +112,6 @@ function configurarLogin() {
   }
 }
 
-async function resetarSenha() {
-  const email = window.prompt("Digite o e-mail da sua conta:");
-  if (email === null) return;
-  const cpf = window.prompt("Digite o CPF cadastrado (somente números):");
-  if (cpf === null) return;
-  const novaSenha = window.prompt("Digite a nova senha (mínimo de 8 caracteres):");
-  if (novaSenha === null) return;
-  const confirmacao = window.prompt("Digite novamente a nova senha:");
-  if (confirmacao === null) return;
-  if (novaSenha !== confirmacao) {
-    mostrarAviso("As senhas não conferem.", "aviso");
-    return;
-  }
-  try {
-    const resposta = await fetch(`${API_URL}/funcionario/resetar-senha`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ email: email.trim(), cpf: cpf.replace(/\D/g, ""), novaSenha }),
-    });
-    const resultado = await resposta.json();
-    if (!resposta.ok || !resultado.sucesso) throw new Error(resultado.mensagem || "Não foi possível redefinir a senha.");
-    const emailInput = document.querySelector("#email");
-    const senhaInput = document.querySelector("#senha");
-    if (emailInput) emailInput.value = email.trim();
-    if (senhaInput) senhaInput.value = novaSenha;
-    mostrarAviso("Senha redefinida. Agora clique em Iniciar Sessão usando a nova senha.", "sucesso", 7000);
-  } catch (erro) {
-    console.error("Erro ao redefinir senha:", erro);
-    mostrarAviso(erro.message || "Não foi possível redefinir a senha.");
-  }
+function resetarSenha() {
+  window.location.href = "reset-senha.html";
 }

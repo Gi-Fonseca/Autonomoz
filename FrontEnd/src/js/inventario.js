@@ -4,8 +4,39 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarInventario();
   document
     .getElementById("mov-tipo")
-    ?.addEventListener("change", configurarQuantidadeMovimentacao);
+    ?.addEventListener("change", () => {
+      configurarQuantidadeMovimentacao();
+      configurarClienteMovimentacao();
+    });
+  document
+    .getElementById("mov-finalidade")
+    ?.addEventListener("change", configurarClienteMovimentacao);
 });
+
+function configurarClienteMovimentacao() {
+  const bloco = document.getElementById("mov-cliente-bloco");
+  const valorBloco = document.getElementById("mov-valor-venda-bloco");
+  const finalidadeBloco = document.getElementById("mov-finalidade-bloco");
+  const select = document.getElementById("mov-tipo");
+  const finalidade = document.getElementById("mov-finalidade");
+  const clienteNome = document.getElementById("mov-cliente-nome");
+  const clienteCnpj = document.getElementById("mov-cliente-cnpj");
+  const valorVenda = document.getElementById("mov-valor-venda");
+  if (!bloco || !valorBloco || !finalidadeBloco || !select || !finalidade || !clienteNome || !clienteCnpj || !valorVenda) return;
+  const eSaida = select.value === "SAIDA";
+  const eVenda = eSaida && finalidade.value === "VENDA";
+  finalidadeBloco.classList.toggle("d-none", !eSaida);
+  bloco.classList.toggle("d-none", !eVenda);
+  valorBloco.classList.toggle("d-none", !eVenda);
+  clienteNome.required = eVenda;
+  clienteCnpj.required = eVenda;
+  valorVenda.required = eVenda;
+  if (!eVenda) {
+    clienteNome.value = "";
+    clienteCnpj.value = "";
+    valorVenda.value = "";
+  }
+}
 
 function configurarAcessibilidadeModalMovimentacao() {
   const modal = document.getElementById("modalMovimentacao");
@@ -211,6 +242,8 @@ function abrirDetalhesProduto(id) {
   preencher("#detalhe-fornecedor", produto.fornecedor_nome || "-");
   preencher("#detalhe-quantidade", produto.quantidade ?? 0);
   preencher("#detalhe-minimo", produto.estoque_minimo ?? 0);
+  preencher("#detalhe-preco-custo", formatarMoeda(produto.preco_custo));
+  preencher("#detalhe-preco-venda", formatarMoeda(produto.preco_venda));
   preencher("#detalhe-status", produto.status ? "Ativo" : "Inativo");
   preencher("#detalhe-placa", produto.placa || "-");
   preencher("#detalhe-chassi", produto.chassi || "-");
@@ -266,6 +299,8 @@ function mostrarDetalhesProduto(id) {
   preencher("inline-produto-fornecedor", produto.fornecedor_nome || "-");
   preencher("inline-produto-quantidade", produto.quantidade ?? 0);
   preencher("inline-produto-minimo", produto.estoque_minimo ?? 0);
+  preencher("inline-produto-preco-custo", formatarMoeda(produto.preco_custo));
+  preencher("inline-produto-preco-venda", formatarMoeda(produto.preco_venda));
   preencher("inline-produto-status", produto.status ? "Ativo" : "Inativo");
   preencher("inline-produto-placa", produto.placa || "-");
   preencher("inline-produto-chassi", produto.chassi || "-");
@@ -295,6 +330,11 @@ function abrirModalMov(id, nome, tipo) {
   document.getElementById("mov-produto-id").value = id;
   document.getElementById("mov-produto-nome").value = nome;
   document.getElementById("mov-tipo").value = tipo;
+  document.getElementById("mov-finalidade").value = "NAO_VENDA";
+  document.getElementById("mov-cliente-nome").value = "";
+  document.getElementById("mov-cliente-cnpj").value = "";
+  document.getElementById("mov-valor-venda").value = "";
+  configurarClienteMovimentacao();
   document.getElementById("mov-qtd").value = 1;
   document.getElementById("mov-obs").value = "";
   configurarQuantidadeMovimentacao();
@@ -323,6 +363,12 @@ async function confirmarMovimentacao() {
   const produtoId = document.getElementById("mov-produto-id").value;
   const tipo = document.getElementById("mov-tipo").value;
   const quantidade = Number(document.getElementById("mov-qtd").value);
+  const finalidade = document.getElementById("mov-finalidade")?.value;
+  const eVenda = tipo === "SAIDA" && finalidade === "VENDA";
+  const clienteNome = document.getElementById("mov-cliente-nome")?.value.trim();
+  const clienteCnpj = document.getElementById("mov-cliente-cnpj")?.value.trim();
+  const valorVendaCampo = document.getElementById("mov-valor-venda")?.value;
+  const valorVenda = valorVendaCampo === "" || valorVendaCampo == null ? null : Number(valorVendaCampo);
   const campoMotivo = document.getElementById("mov-obs");
   const observacao = campoMotivo.value.trim();
   if (
@@ -330,7 +376,7 @@ async function confirmarMovimentacao() {
     (tipo === "AJUSTE" ? quantidade === 0 : quantidade <= 0)
   )
     return mostrarAviso("Informe uma quantidade válida.", "aviso");
-  if (!observacao) {
+  if (!observacao && tipo !== "SAIDA") {
     mostrarAviso("O motivo da movimentação é obrigatório.", "aviso");
     campoMotivo.focus();
     return;
@@ -340,17 +386,33 @@ async function confirmarMovimentacao() {
     campoMotivo.focus();
     return;
   }
+  if (eVenda && (!clienteNome || !clienteCnpj)) {
+    mostrarAviso("Informe o nome e o CNPJ do cliente da venda.", "aviso");
+    document.getElementById(!clienteNome ? "mov-cliente-nome" : "mov-cliente-cnpj")?.focus();
+    return;
+  }
+  if (eVenda && (valorVenda === null || !Number.isFinite(valorVenda) || valorVenda < 0)) {
+    mostrarAviso("Informe um valor de venda válido.", "aviso");
+    document.getElementById("mov-valor-venda")?.focus();
+    return;
+  }
   const payload = {
     id_produto: Number(produtoId),
     quantidade,
     valor_compra: 0,
   };
+  if (eVenda && clienteNome && clienteCnpj) {
+    payload.cliente = `${clienteNome} — CNPJ ${clienteCnpj}`;
+    payload.cliente_nome = clienteNome;
+    payload.cliente_cnpj = clienteCnpj;
+    payload.valor_venda = valorVenda;
+  }
   const campoMotivoPorTipo = {
     ENTRADA: "motivo_entrada",
     SAIDA: "motivo_saida",
     AJUSTE: "motivo_ajuste",
   }[tipo];
-  payload[campoMotivoPorTipo] = observacao;
+  if (observacao) payload[campoMotivoPorTipo] = observacao;
   const rota = { ENTRADA: "/entrada", SAIDA: "/saida", AJUSTE: "/ajuste" }[
     tipo
   ];

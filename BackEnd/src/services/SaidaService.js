@@ -2,17 +2,12 @@ const SaidaRepository = require("../repositories/SaidaRepository");
 
 function validarMotivoSaida(valor) {
   const motivo = typeof valor === "string" ? valor.trim() : "";
-  if (!motivo) {
-    const erro = new Error("O motivo da saída é obrigatório.");
-    erro.status = 400;
-    throw erro;
-  }
   if (motivo.length > 255) {
     const erro = new Error("O motivo da saída deve ter no máximo 255 caracteres.");
     erro.status = 400;
     throw erro;
   }
-  return motivo;
+  return motivo || null;
 }
 
 class SaidaService {

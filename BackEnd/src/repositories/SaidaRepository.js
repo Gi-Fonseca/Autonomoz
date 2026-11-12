@@ -37,6 +37,9 @@ class SaidaRepository {
       id_produto,
       id_funcionario,
       quantidade,
+      cliente,
+      cliente_nome,
+      cliente_cnpj,
       motivo_saida,
       valor_venda,
       nf,
@@ -48,13 +51,16 @@ class SaidaRepository {
 
       // 1. Cadastra a saída na tabela
       const querySaida = `
-                INSERT INTO saida_produto (id_produto, id_funcionario, id_cliente, quantidade, data_saida, motivo_saida, valor_venda, nf)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO saida_produto (id_produto, id_funcionario, id_cliente, cliente, cliente_nome, cliente_cnpj, quantidade, data_saida, motivo_saida, valor_venda, nf)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
       const [resSaida] = await connection.execute(querySaida, [
         id_produto,
         id_funcionario,
         dados.id_cliente || null,
+        cliente || null,
+        cliente_nome || null,
+        cliente_cnpj || null,
         quantidade,
         dados.data_saida || new Date(),
         motivo_saida,
@@ -96,6 +102,9 @@ class SaidaRepository {
       id_produto,
       id_funcionario,
       quantidade,
+      cliente,
+      cliente_nome,
+      cliente_cnpj,
       motivo_saida,
       valor_venda,
       nf,
@@ -123,13 +132,16 @@ class SaidaRepository {
       // Atualiza o registro da saída
       const queryUpdate = `
                 UPDATE saida_produto 
-                SET id_produto = ?, id_funcionario = ?, id_cliente = ?, quantidade = ?, data_saida = ?, motivo_saida = ?, valor_venda = ?, nf = ?
+                SET id_produto = ?, id_funcionario = ?, id_cliente = ?, cliente = ?, cliente_nome = ?, cliente_cnpj = ?, quantidade = ?, data_saida = ?, motivo_saida = ?, valor_venda = ?, nf = ?
                 WHERE id_saida = ?
             `;
       await connection.execute(queryUpdate, [
         id_produto,
         id_funcionario,
         dados.id_cliente || null,
+        cliente || null,
+        cliente_nome || null,
+        cliente_cnpj || null,
         quantidade,
         dados.data_saida || new Date(),
         motivo_saida,

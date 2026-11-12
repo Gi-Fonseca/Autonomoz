@@ -57,8 +57,17 @@ async function carregarSelects() {
 
 function categoriaPertenceAoTipo(categoria, tipo) {
   const nome = String(categoria?.tipo_produto || "").toLowerCase();
-  if (tipo === "VEICULO") return nome.includes("veícul") || nome.includes("veicul");
-  return nome.includes("peç") || nome.includes("peca") || nome.includes("reposição") || nome.includes("reposicao");
+  const categoriaDeVeiculo = nome.includes("veícul") || nome.includes("veicul");
+  const categoriaDePeca =
+    nome.includes("peç") ||
+    nome.includes("peca") ||
+    nome.includes("reposição") ||
+    nome.includes("reposicao");
+
+  // Categorias digitadas livremente, como "Picape Média", são válidas.
+  // Só bloqueia quando o próprio nome deixa claro que é do outro tipo.
+  if (tipo === "VEICULO") return !categoriaDePeca;
+  return !categoriaDeVeiculo;
 }
 
 function atualizarCategoriasPorTipo() {
@@ -147,6 +156,8 @@ function configurarFormularioProduto() {
       ano: document.getElementById("prod-ano")?.value
         ? Number(document.getElementById("prod-ano").value)
         : null,
+      preco_custo: Number(document.getElementById("prod-preco-custo")?.value || 0),
+      preco_venda: Number(document.getElementById("prod-preco-venda")?.value || 0),
       ...(fotoBase64 ? { fotoBase64 } : {}),
       status: produtoOriginal ? Boolean(produtoOriginal.status) : true,
     };
@@ -241,6 +252,8 @@ async function carregarProdutoParaAjuste() {
     preencher("prod-chassi", produto.chassi || "");
     preencher("prod-placa", produto.placa || "");
     preencher("prod-ano", produto.ano || "");
+    preencher("prod-preco-custo", produto.preco_custo ?? 0);
+    preencher("prod-preco-venda", produto.preco_venda ?? 0);
     atualizarPreviewFotoProduto();
   } catch (erro) {
     console.error("Erro ao carregar cadastro para ajuste:", erro);

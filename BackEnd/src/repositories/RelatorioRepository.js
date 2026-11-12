@@ -40,7 +40,7 @@ class RelatorioRepository {
              e.nf,
              e.valor_compra,
              f.nome AS funcionario_nome,
-             COALESCE(NULLIF(e.motivo_entrada, ''), CONCAT('NF: ', COALESCE(e.nf, '-'))) AS motivo
+             COALESCE(NULLIF(TRIM(e.motivo_entrada), ''), 'Não informado') AS motivo
       FROM entrada_produto e
       LEFT JOIN produtos p ON p.id_produto = e.id_produto
       LEFT JOIN funcionario f ON f.id = e.id_funcionario
@@ -61,14 +61,15 @@ class RelatorioRepository {
              s.data_saida AS data_movimentacao,
              p.nome AS produto_nome,
              s.quantidade,
-             s.id_cliente,
+             COALESCE(NULLIF(TRIM(s.cliente_nome), ''), NULLIF(TRIM(s.cliente), ''), NULLIF(TRIM(c.nome), ''), 'Não venda') AS cliente_nome,
+             COALESCE(NULLIF(TRIM(s.cliente_cnpj), ''), NULLIF(TRIM(c.cadastro), '')) AS cliente_cnpj,
              s.valor_venda,
-             s.nf,
              f.nome AS funcionario_nome,
-             s.motivo_saida AS motivo
+             COALESCE(NULLIF(TRIM(s.motivo_saida), ''), 'Não informado') AS motivo
       FROM saida_produto s
       LEFT JOIN produtos p ON p.id_produto = s.id_produto
       LEFT JOIN funcionario f ON f.id = s.id_funcionario
+      LEFT JOIN cliente c ON c.id_cliente = s.id_cliente
       ORDER BY s.data_saida DESC, s.id_saida DESC
     `);
     return {

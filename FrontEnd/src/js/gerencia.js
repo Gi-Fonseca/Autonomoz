@@ -1,6 +1,17 @@
 let relatorioAtual = null;
 let tipoRelatorioAtual = "estoque";
 
+function nomeClienteRelatorio(item) {
+  const texto = String(item.cliente_nome || item.cliente || "").trim();
+  return texto.split(/\s+—\s+CNPJ\s+/i)[0] || "Não venda";
+}
+
+function cnpjClienteRelatorio(item) {
+  if (item.cliente_cnpj) return item.cliente_cnpj;
+  const encontrado = String(item.cliente || "").match(/CNPJ\s+(.+)$/i);
+  return encontrado?.[1] || "—";
+}
+
 const TIPOS_RELATORIO = {
   estoque: {
     titulo: "Relatório de estoque",
@@ -42,37 +53,36 @@ const TIPOS_RELATORIO = {
         valor: (item) => formatarQuantidadeMovimentacao(item.tipo, item.quantidade),
       },
       { titulo: "Responsável", valor: (item) => item.funcionario_nome || "-" },
-      { titulo: "Motivo", valor: (item) => item.motivo || "-" },
+      { titulo: "Motivo", valor: (item) => item.motivo || "Não informado" },
     ],
   },
   entradas: {
     titulo: "Relatório de entradas",
-    descricao: "Recebimentos lançados no estoque, com fornecedor, nota fiscal e motivo.",
+    descricao: "Recebimentos lançados no estoque, com fornecedor e motivo.",
     rota: "/relatorios/entradas",
     colunas: [
       { titulo: "Data", valor: (item) => formatarData(item.data_movimentacao) },
       { titulo: "Produto", valor: (item) => item.produto_nome || "-" },
       { titulo: "Quantidade", valor: (item) => item.quantidade ?? 0 },
       { titulo: "Fornecedor", valor: (item) => item.fornecedor || "-" },
-      { titulo: "NF", valor: (item) => item.nf || "-" },
       { titulo: "Valor de compra", valor: (item) => formatarMoeda(item.valor_compra) },
       { titulo: "Responsável", valor: (item) => item.funcionario_nome || "-" },
-      { titulo: "Motivo", valor: (item) => item.motivo || "-" },
+      { titulo: "Motivo", valor: (item) => item.motivo || "Não informado" },
     ],
   },
   saidas: {
     titulo: "Relatório de saídas",
-    descricao: "Retiradas lançadas no estoque, com cliente, nota fiscal e motivo.",
+    descricao: "Retiradas lançadas no estoque, com cliente e motivo opcional.",
     rota: "/relatorios/saidas",
     colunas: [
       { titulo: "Data", valor: (item) => formatarData(item.data_movimentacao) },
       { titulo: "Produto", valor: (item) => item.produto_nome || "-" },
       { titulo: "Quantidade", valor: (item) => item.quantidade ?? 0 },
-      { titulo: "ID do cliente", valor: (item) => item.id_cliente || "-" },
-      { titulo: "NF", valor: (item) => item.nf || "-" },
+      { titulo: "Nome do cliente", valor: nomeClienteRelatorio },
+      { titulo: "CNPJ", valor: cnpjClienteRelatorio },
       { titulo: "Valor de venda", valor: (item) => formatarMoeda(item.valor_venda) },
       { titulo: "Responsável", valor: (item) => item.funcionario_nome || "-" },
-      { titulo: "Motivo", valor: (item) => item.motivo || "-" },
+      { titulo: "Motivo", valor: (item) => item.motivo || "Não informado" },
     ],
   },
 };

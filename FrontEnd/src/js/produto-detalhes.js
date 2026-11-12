@@ -43,11 +43,19 @@ function preencherProduto(produto) {
   texto("produto-fornecedor", produto.fornecedor_nome || "-");
   texto("produto-quantidade", produto.quantidade ?? 0);
   texto("produto-minimo", produto.estoque_minimo ?? 0);
+  texto("produto-preco-custo", formatarMoeda(produto.preco_custo));
+  texto("produto-preco-venda", formatarMoeda(produto.preco_venda));
   texto("produto-status", produto.status ? "Ativo" : "Inativo");
   texto("produto-validade", produto.validade || "-");
   texto("produto-placa", produto.placa || "-");
   texto("produto-chassi", produto.chassi || "-");
   texto("produto-ano", produto.ano || "-");
+}
+
+function formatarMoeda(valor) {
+  const numero = Number(valor);
+  if (!Number.isFinite(numero)) return "R$ 0,00";
+  return numero.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 function mostrarErro(mensagem) {

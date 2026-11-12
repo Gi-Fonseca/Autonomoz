@@ -39,7 +39,7 @@ class ProdutoRepository {
   // Cria produto
   async publicarProduto(dados) {
     const [resultado] = await pool.query(
-      "INSERT INTO produtos (nome, descricao, tipo_item, quantidade, estoque_minimo, validade, id_categoria, id_fornecedor, status, chassi, placa, ano, foto) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO produtos (nome, descricao, tipo_item, quantidade, estoque_minimo, validade, id_categoria, id_fornecedor, status, chassi, placa, ano, foto, preco_custo, preco_venda) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         dados.nome,
         dados.descricao,
@@ -54,6 +54,8 @@ class ProdutoRepository {
         dados.placa,
         dados.ano,
         dados.foto || null,
+        dados.preco_custo,
+        dados.preco_venda,
       ],
     );
     return resultado.insertId;
@@ -74,6 +76,8 @@ class ProdutoRepository {
       "placa",
       "ano",
       "foto",
+      "preco_custo",
+      "preco_venda",
     ];
     const connection = await pool.getConnection();
     try {

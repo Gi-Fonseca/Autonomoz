@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="src/css/login-cadastro.css" />
-  <title>Autonomoz | Resetar senha</title>
+  <link rel="stylesheet" href="src/css/style.css" />
+  <title>Autonomoz | Redefinir senha</title>
 </head>
 <body>
   <main class="form-div">
@@ -13,27 +14,41 @@
       <p class="subtitulo">Redefinição de senha</p>
     </header>
     <form id="resetForm" class="form-body">
-      <p class="registro-link">Informe seu e-mail para gerar um código temporário.</p>
+      <p class="registro-link">Preencha seus dados para cadastrar uma nova senha.</p>
       <div class="form-forms__group">
         <label for="email" class="form-forms__label">E-mail</label>
-        <input class="form-forms__input" type="email" id="email" required placeholder="nome@email.com" />
-      </div>
-      <button class="form-body__btn" type="button" id="solicitarBtn">Gerar código</button>
-      <div id="etapaCodigo" hidden>
-        <div class="form-forms__group">
-          <label for="codigo" class="form-forms__label">Código de recuperação</label>
-          <input class="form-forms__input" inputmode="numeric" maxlength="6" id="codigo" placeholder="000000" />
+        <div class="form-forms__input-wrapper">
+          <i class="fa-solid fa-at form-forms__icon"></i>
+          <input class="form-forms__input" type="email" id="email" required placeholder="nome@email.com" />
         </div>
-        <div class="form-forms__group">
-          <label for="novaSenha" class="form-forms__label">Nova senha</label>
+      </div>
+      <div class="form-forms__group">
+        <label for="cpf" class="form-forms__label">CPF</label>
+        <div class="form-forms__input-wrapper">
+          <i class="fa-solid fa-address-card form-forms__icon"></i>
+          <input class="form-forms__input" type="text" id="cpf" inputmode="numeric" maxlength="11" required placeholder="Somente números" />
+        </div>
+      </div>
+      <div class="form-forms__group">
+        <label for="novaSenha" class="form-forms__label">Nova senha</label>
+        <div class="form-forms__input-wrapper">
+          <i class="fa-solid fa-lock form-forms__icon"></i>
           <input class="form-forms__input" type="password" id="novaSenha" minlength="8" required placeholder="Mínimo de 8 caracteres" />
         </div>
-        <button class="form-body__btn" type="submit">Redefinir senha</button>
       </div>
+      <div class="form-forms__group">
+        <label for="confirmarSenha" class="form-forms__label">Confirmar nova senha</label>
+        <div class="form-forms__input-wrapper">
+          <i class="fa-solid fa-lock form-forms__icon"></i>
+          <input class="form-forms__input" type="password" id="confirmarSenha" minlength="8" required placeholder="Digite novamente" />
+        </div>
+      </div>
+      <button class="form-body__btn" type="submit" id="resetarBtn">Salvar nova senha</button>
       <a class="registro-link" href="login.html">Voltar para o login</a>
     </form>
   </main>
-  <script src="src/js/config.js"></script>
-  <script src="src/scripts/reset-senha.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.0/js/all.min.js"></script>
+  <script src="src/js/config.js?v=20261112-reset"></script>
+  <script src="src/scripts/reset-senha.js?v=20261112-reset"></script>
 </body>
 </html>

@@ -8,7 +8,7 @@ class MovimentacaoRepository {
         SELECT e.id_entrada AS referencia_id, e.data_entrada AS data_movimentacao,
                'ENTRADA' AS tipo, e.quantidade, p.nome AS produto_nome,
                f.nome AS funcionario_nome,
-               COALESCE(NULLIF(e.motivo_entrada, ''), CONCAT('NF: ', COALESCE(e.nf, '-'))) AS motivo
+               COALESCE(NULLIF(TRIM(e.motivo_entrada), ''), 'Não informado') AS motivo
         FROM entrada_produto e
         LEFT JOIN produtos p ON p.id_produto = e.id_produto
         LEFT JOIN funcionario f ON f.id = e.id_funcionario
@@ -26,10 +26,9 @@ class MovimentacaoRepository {
         LEFT JOIN funcionario f ON f.id = a.id_funcionario
       ) historico
       ORDER BY data_movimentacao DESC, referencia_id DESC
-      ${Number.isInteger(limite) && limite > 0 ? "LIMIT ?" : ""}
+      ${Number.isInteger(limite) && limite > 0 ? `LIMIT ${limite}` : ""}
     `;
-    const parametros = Number.isInteger(limite) && limite > 0 ? [limite] : [];
-    const [rows] = await db.execute(query, parametros);
+    const [rows] = await db.query(query);
     return rows;
   }
 

@@ -39,7 +39,9 @@ class SaidaController {
       const dadosSaida = {
         ...(req.body || {}),
         id_funcionario: req.usuario.id,
-        id_cliente: req.body?.id_cliente || null,
+        cliente: String(req.body?.cliente || "").trim() || null,
+        cliente_nome: String(req.body?.cliente_nome || "").trim() || null,
+        cliente_cnpj: String(req.body?.cliente_cnpj || "").trim() || null,
         data_saida: req.body?.data_saida || new Date(),
       };
 

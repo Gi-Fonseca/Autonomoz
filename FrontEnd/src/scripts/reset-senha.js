@@ -1,51 +1,53 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const email = document.querySelector("#email");
-  const codigo = document.querySelector("#codigo");
-  const novaSenha = document.querySelector("#novaSenha");
-  const etapaCodigo = document.querySelector("#etapaCodigo");
-  const solicitarBtn = document.querySelector("#solicitarBtn");
-  const form = document.querySelector("#resetForm");
+  const form = document.getElementById("resetForm");
+  const email = document.getElementById("email");
+  const cpf = document.getElementById("cpf");
+  const novaSenha = document.getElementById("novaSenha");
+  const confirmarSenha = document.getElementById("confirmarSenha");
+  const botao = document.getElementById("resetarBtn");
 
-  async function requisicao(rota, body) {
-    try {
-      const resposta = await fetch(`${API_URL}${rota}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(body),
-      });
-      const resultado = await resposta.json().catch(() => ({}));
-      if (!resposta.ok || !resultado.sucesso) throw new Error(resultado.mensagem || "Não foi possível concluir a operação.");
-      return resultado;
-    } catch (erro) {
-      if (erro instanceof TypeError) throw new Error("Não foi possível conectar ao servidor. Inicie o backend em http://localhost:3000 e tente novamente.");
-      throw erro;
-    }
-  }
-
-  solicitarBtn.addEventListener("click", async () => {
-    if (!email.value.trim()) return mostrarAviso("Informe seu e-mail.", "aviso");
-    solicitarBtn.disabled = true;
-    try {
-      const resultado = await requisicao("/funcionario/solicitar-reset", { email: email.value.trim() });
-      etapaCodigo.hidden = false;
-      if (resultado.dados?.codigo) {
-        codigo.value = resultado.dados.codigo;
-        mostrarAviso(`Código de teste: ${resultado.dados.codigo}`, "info", 10000);
-      } else {
-        mostrarAviso(resultado.mensagem, "sucesso", 7000);
-      }
-    } catch (erro) { mostrarAviso(erro.message, "erro"); }
-    finally { solicitarBtn.disabled = false; }
+  cpf?.addEventListener("input", () => {
+    cpf.value = cpf.value.replace(/\D/g, "").slice(0, 11);
   });
 
-  form.addEventListener("submit", async (evento) => {
+  form?.addEventListener("submit", async (evento) => {
     evento.preventDefault();
-    if (!/^\d{6}$/.test(codigo.value.trim())) return mostrarAviso("Informe o código de 6 dígitos.", "aviso");
-    if (novaSenha.value.length < 8) return mostrarAviso("A nova senha deve ter no mínimo 8 caracteres.", "aviso");
+    const emailValor = email.value.trim();
+    const cpfValor = cpf.value.replace(/\D/g, "");
+
+    if (!emailValor || cpfValor.length !== 11) {
+      mostrarAviso("Informe um e-mail e um CPF válido.", "aviso");
+      return;
+    }
+    if (novaSenha.value.length < 8) {
+      mostrarAviso("A nova senha deve ter no mínimo 8 caracteres.", "aviso");
+      return;
+    }
+    if (novaSenha.value !== confirmarSenha.value) {
+      mostrarAviso("As senhas não conferem.", "aviso");
+      return;
+    }
+
+    const textoOriginal = botao.innerHTML;
+    botao.disabled = true;
+    botao.innerHTML = "Salvando...";
     try {
-      const resultado = await requisicao("/funcionario/resetar-senha", { email: email.value.trim(), codigo: codigo.value.trim(), novaSenha: novaSenha.value });
-      mostrarAviso(resultado.mensagem, "sucesso", 5000);
-      setTimeout(() => { window.location.href = "login.html"; }, 1400);
-    } catch (erro) { mostrarAviso(erro.message, "erro"); }
+      const resposta = await fetch(`${API_URL}/funcionario/resetar-senha`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ email: emailValor, cpf: cpfValor, novaSenha: novaSenha.value }),
+      });
+      const resultado = await resposta.json().catch(() => ({}));
+      if (!resposta.ok || !resultado.sucesso) {
+        throw new Error(resultado.mensagem || "Não foi possível redefinir a senha.");
+      }
+      mostrarAviso("Senha redefinida com sucesso. Você será levado ao login.", "sucesso", 3000);
+      setTimeout(() => { window.location.href = "login.html"; }, 1500);
+    } catch (erro) {
+      mostrarAviso(erro.message || "Não foi possível redefinir a senha.", "erro");
+    } finally {
+      botao.disabled = false;
+      botao.innerHTML = textoOriginal;
+    }
   });
 });

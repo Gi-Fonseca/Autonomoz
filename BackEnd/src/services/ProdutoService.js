@@ -124,6 +124,8 @@ class ProdutoService {
       placa: dados.placa ? String(dados.placa).trim().toUpperCase() : null,
       ano: dados.ano ? Number(dados.ano) : null,
       foto: dados.foto || null,
+      preco_custo: numero(dados.preco_custo ?? 0, "Preço de custo"),
+      preco_venda: numero(dados.preco_venda ?? 0, "Preço de venda"),
     };
     if (tipo_item === "VEICULO" && !novoProduto.chassi && !novoProduto.placa) {
       throw {
@@ -167,6 +169,8 @@ class ProdutoService {
       "placa",
       "ano",
       "foto",
+      "preco_custo",
+      "preco_venda",
     ];
     for (const campo of campos)
       if (dados[campo] !== undefined) permitido[campo] = dados[campo];
@@ -205,6 +209,10 @@ class ProdutoService {
       );
     if (permitido.ano !== undefined && permitido.ano !== null)
       permitido.ano = numero(permitido.ano, "Ano", 1886);
+    if (permitido.preco_custo !== undefined)
+      permitido.preco_custo = numero(permitido.preco_custo, "Preço de custo");
+    if (permitido.preco_venda !== undefined)
+      permitido.preco_venda = numero(permitido.preco_venda, "Preço de venda");
     if (
       permitido.tipo_item !== undefined &&
       !["PECA", "VEICULO"].includes(String(permitido.tipo_item).toUpperCase())
