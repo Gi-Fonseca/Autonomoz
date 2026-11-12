@@ -115,6 +115,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   document
     .getElementById("btn-exportar-csv")
     ?.addEventListener("click", exportarCsv);
+  document
+    .getElementById("btn-exportar-excel")
+    ?.addEventListener("click", exportarExcel);
   document.getElementById("btn-imprimir")?.addEventListener("click", imprimirRelatorio);
   document.querySelectorAll("[data-tipo-relatorio]").forEach((botao) => {
     botao.addEventListener("click", () => {
@@ -469,15 +472,11 @@ function exportarCsv() {
     return mostrarMensagem("Carregue um relatório antes de exportar.", "warning");
   }
   const configuracao = TIPOS_RELATORIO[relatorioAtual.tipo];
+  const colunas = colunasExportaveis(configuracao);
   const linhas = [
-    ["Relatório", configuracao.titulo],
-    ["Gerado por", obterEmailGerador()],
-    ["Gerado em", formatarDataHoraRelatorio(relatorioAtual.geradoEm)],
-    ["Registros", relatorioAtual.itens.length],
-    [],
-    configuracao.colunas.map((coluna) => coluna.titulo),
+    colunas.map((coluna) => coluna.titulo),
     ...relatorioAtual.itens.map((item) =>
-      configuracao.colunas.map((coluna) => coluna.valor(item) ?? ""),
+      colunas.map((coluna) => valorExportacao(coluna, item)),
     ),
   ];
   const csv = "\uFEFF" + linhas
@@ -489,22 +488,45 @@ function exportarCsv() {
   );
 }
 
+function exportarExcel() {
+  if (!relatorioAtual) return mostrarMensagem("Carregue um relatório antes de exportar.", "warning");
+  const configuracao = TIPOS_RELATORIO[relatorioAtual.tipo];
+  const colunas = colunasExportaveis(configuracao);
+  const cabecalho = colunas.map((coluna) => `<th>${escapar(coluna.titulo)}</th>`).join("");
+  const linhas = relatorioAtual.itens.map((item) => `<tr>${colunas.map((coluna) => `<td>${escapar(valorExportacao(coluna, item) || "-")}</td>`).join("")}</tr>`).join("");
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;color:#202124}h1{color:#9f1239;font-size:20px}p{color:#666}.tabela{border-collapse:collapse;width:100%;font-size:12px}.tabela th{background:#9f1239;color:#fff;border:1px solid #7f0d2f;padding:9px;text-align:left}.tabela td{border:1px solid #d1d5db;padding:8px;vertical-align:top}.tabela tr:nth-child(even) td{background:#f8fafc}</style></head><body><h1>${escapar(configuracao.titulo)}</h1><p>${escapar(configuracao.descricao)}<br>Gerado em ${escapar(formatarDataHoraRelatorio(relatorioAtual.geradoEm))}</p><table class="tabela"><thead><tr>${cabecalho}</tr></thead><tbody>${linhas || `<tr><td colspan="${colunas.length}">Nenhum registro encontrado.</td></tr>`}</tbody></table></body></html>`;
+  baixarArquivo(new Blob(["\uFEFF", html], { type: "application/vnd.ms-excel;charset=utf-8" }), `relatorio-${relatorioAtual.tipo}-${new Date().toISOString().slice(0, 10)}.xls`);
+}
+
 function criarDocumentoRelatorio() {
   const configuracao = TIPOS_RELATORIO[relatorioAtual.tipo];
-  const cabecalho = configuracao.colunas
+  const colunas = colunasExportaveis(configuracao);
+  const cabecalho = colunas
     .map((coluna) => `<th>${escapar(coluna.titulo)}</th>`)
     .join("");
   const linhas = relatorioAtual.itens
     .map(
       (item) =>
-        `<tr>${configuracao.colunas
-          .map((coluna) => `<td>${escapar(coluna.valor(item) ?? "-")}</td>`)
+          `<tr>${colunas
+          .map((coluna) => `<td>${escapar(valorExportacao(coluna, item) || "-")}</td>`)
           .join("")}</tr>`,
     )
     .join("");
   const email = escapar(obterEmailGerador());
   const data = escapar(formatarDataHoraRelatorio(relatorioAtual.geradoEm));
-  return `<!DOCTYPE html><html lang="pt-BR" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><meta name="ProgId" content="Word.Document"><title>${escapar(configuracao.titulo)}</title><style>@page Relatorio{size:29.7cm 21cm;margin:1.5cm;mso-page-orientation:landscape}div.Relatorio{page:Relatorio}body{font-family:Arial,sans-serif;color:#202124;font-size:10pt}.marca{font-size:9pt;color:#666}.titulo{font-size:20pt;color:#9f1239;margin:5px 0}.meta{font-size:9pt;color:#444;line-height:1.5}.linha{border:0;border-top:2px solid #9f1239;margin:12px 0}table{width:100%;border-collapse:collapse;table-layout:auto;margin-top:16px;font-size:8.5pt}th{background:#9f1239;color:#fff;text-align:left;padding:7px;border:1px solid #9f1239}td{border:1px solid #d1d5db;padding:6px;vertical-align:top}tr:nth-child(even) td{background:#f7f7f7}</style></head><body><div class="Relatorio"><div class="marca">AutoNoMoz · Gestão de Frota</div><h1 class="titulo">${escapar(configuracao.titulo)}</h1><div class="meta">${escapar(configuracao.descricao)}<br><strong>Gerado por:</strong> ${email}<br><strong>Data e hora:</strong> ${data}<br><strong>Total de registros:</strong> ${relatorioAtual.itens.length}</div><hr class="linha"><table><thead><tr>${cabecalho}</tr></thead><tbody>${linhas || `<tr><td colspan="${configuracao.colunas.length}">Nenhum registro encontrado.</td></tr>`}</tbody></table></div></body></html>`;
+  return `<!DOCTYPE html><html lang="pt-BR" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><meta name="ProgId" content="Word.Document"><title>${escapar(configuracao.titulo)}</title><style>@page Relatorio{size:29.7cm 21cm;margin:1.5cm;mso-page-orientation:landscape}div.Relatorio{page:Relatorio}body{font-family:Arial,sans-serif;color:#202124;font-size:10pt}.marca{font-size:9pt;color:#666}.titulo{font-size:20pt;color:#9f1239;margin:5px 0}.meta{font-size:9pt;color:#444;line-height:1.5}.linha{border:0;border-top:2px solid #9f1239;margin:12px 0}table{width:100%;border-collapse:collapse;table-layout:auto;margin-top:16px;font-size:8.5pt}th{background:#9f1239;color:#fff;text-align:left;padding:7px;border:1px solid #9f1239}td{border:1px solid #d1d5db;padding:6px;vertical-align:top}tr:nth-child(even) td{background:#f7f7f7}</style></head><body><div class="Relatorio"><div class="marca">AutoNoMoz · Gestão de Frota</div><h1 class="titulo">${escapar(configuracao.titulo)}</h1><div class="meta">${escapar(configuracao.descricao)}<br><strong>Gerado por:</strong> ${email}<br><strong>Data e hora:</strong> ${data}<br><strong>Total de registros:</strong> ${relatorioAtual.itens.length}</div><hr class="linha"><table><thead><tr>${cabecalho}</tr></thead><tbody>${linhas || `<tr><td colspan="${colunas.length}">Nenhum registro encontrado.</td></tr>`}</tbody></table></div></body></html>`;
+}
+
+function colunasExportaveis(configuracao) {
+  return configuracao.colunas.filter((coluna) => !coluna.html && !coluna.naoExportar);
+}
+
+function valorExportacao(coluna, item) {
+  const valor = coluna.valor(item);
+  return String(valor === undefined || valor === null ? "" : valor)
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function baixarArquivo(blob, nome) {
